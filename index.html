@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تسجيل الغياب - مدرسة الشمامسة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+
+    <style>
+     
+
+
+.school-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* الإطار المربع مع تأثير الأزرق والبنفسجي */
+.logo-frame {
+
+  width: 100px;   /* حجم الإطار */
+  height: 100px;
+  padding: 1px;   /* سمك الإطار (رفيع) */
+  background: linear-gradient(80deg, #3f51b5, #673ab7, #2196f3, #9c27b0, #3f51b5);
+  background-size: 300% 300%;
+  animation: rgb-rotate 6s linear infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* الصورة المربعة */
+.logo-frame img {
+  width: 114px;   /* 120px - 2 * padding */
+  height: 114px;
+    /* يخلي الصورة كاملة من غير قص */
+      /* خلفية لو الصورة فيها فراغ شفاف */
+}
+
+/* أنيميشن لتغيير الألوان */
+@keyframes rgb-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+
+
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --text: #333;
+            --border: #ddd;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        /* التصميم العام */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .logo img {
+            height: 60px;
+        }
+        
+        nav {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-links li a {
+            display: block;
+            padding: 15px 20px;
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-links li a:hover,
+        .nav-links li a.active {
+            background-color: #f8f9fa;
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        /* الأقسام */
+        .section {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .section-title {
+            color: var(--secondary);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light);
+            font-size: 22px;
+        }
+        
+        /* النماذج */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+        
+        input[type="text"],
+        input[type="tel"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: 'Tajawal', sans-serif;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            font-family: 'Tajawal', sans-serif;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        /* الجداول */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th {
+            background-color: var(--light);
+            color: var(--secondary);
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* الحضور والغياب */
+        .attendance-table {
+            overflow-x: auto;
+        }
+        
+        .attendance-check {
+            text-align: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .present {
+            color: var(--success);
+        }
+        
+        .absent {
+            color: var(--accent);
+        }
+        
+        /* البحث */
+        .search-box {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .search-box button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        
+        /* البطاقات */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            border-top: 4px solid var(--primary);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+        
+        .card-detail {
+            margin-bottom: 8px;
+            display: flex;
+        }
+        
+        .card-detail strong {
+            min-width: 100px;
+            color: var(--secondary);
+        }
+        
+        /* التنبيهات */
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* التكيف مع الشاشات المختلفة */
+        @media (max-width: 768px) {
+            .nav-links {
+                flex-direction: column;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>نظام تسجيل الغياب - مدرسه بي نيشتي نيم بي ابسكوبوس</h1>
+                <div class="school-logo">
+                    <div class="logo-frame">
+                      <img src="WhatsApp Image 2025-09-25 at 13.04.33_37954a2f.jpg" alt="School Logo">
+                    </div>
+                  </div>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul class="nav-links">
+                <li><a href="#" class="nav-link active" data-section="students">إدارة الطلاب</a></li>
+                <li><a href="#" class="nav-link" data-section="weeks">إدارة الأسابيع</a></li>
+                <li><a href="#" class="nav-link" data-section="attendance">تسجيل الغياب</a></li>
+                <li><a href="#" class="nav-link" data-section="search">البحث عن طالب</a></li>
+                <li><a href="#" class="nav-link" data-section="reports">التقارير</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <!-- قسم إدارة الطلاب -->
+        <section id="students" class="section active">
+            <h2 class="section-title">إدارة الطلاب</h2>
+            
+            <form id="studentForm">
+                <div class="form-group">
+                    <label for="studentName">اسم الطالب الكامل</label>
+                    <input type="text" id="studentName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="guardianName">اسم ولي الأمر</label>
+                    <input type="text" id="guardianName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="studentPhone">رقم هاتف الطالب (اختياري)</label>
+                    <input type="tel" id="studentPhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="fatherPhone">رقم هاتف الأب</label>
+                    <input type="tel" id="fatherPhone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="motherPhone">رقم هاتف الأم</label>
+                    <input type="tel" id="motherPhone" required>
+                </div>
+                
+                <button type="submit" class="btn">إضافة الطالب</button>
+            </form>
+            
+            <div id="studentsList" style="margin-top: 30px;">
+                <h3>قائمة الطلاب المسجلين</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>ولي الأمر</th>
+                            <th>هاتف الطالب</th>
+                            <th>هاتف الأب</th>
+                            <th>هاتف الأم</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                        <!-- سيتم ملء هذا الجدول بالبيانات من localStorage -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- قسم إدارة الأسابيع -->
+        <section id="weeks" class="section">
+            <h2 class="section-title">إدارة الأسابيع الدراسية</h2>
+            
+            <form id="weekForm">
+                <div class="form-group">
+                    <label for="weekName">اسم الأسبوع</label>
+                    <input type="text" id="weekName" placeholder="مثال: أسبوع أول" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="weekDate">تاريخ بداية الأسبوع</label>
+                    <input type="date" id="weekDate" required>
+                </div>
+                
+                <button type="submit" class="btn">إضافة أسبوع جديد</button>
+            </form>
+            
+            <div id="weeksList" style="margin-top: 30px;">
+                <h3>الأسابيع المضافة</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم الأسبوع</th>
+                            <th>تاريخ البداية</th>
+                            <th>عدد الطلاب</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weeksTableBody">
+                        <!-- سيتم ملء هذا الجدول بالبيانات من localStorage -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- قسم تسجيل الغياب -->
+        <section id="attendance" class="section">
+            <h2 class="section-title">تسجيل الغياب</h2>
+            
+            <div class="form-group">
+                <label for="weekSelect">اختر أسبوع للتسجيل:</label>
+                <select id="weekSelect">
+                    <option value="">-- اختر أسبوع --</option>
+                </select>
+            </div>
+            
+            <div id="attendanceTableContainer" class="attendance-table" style="display: none;">
+                <h3>سجل حضور وغياب الطلاب</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم الطالب</th>
+                            <th>الحضور</th>
+                            <th>الغياب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                        <!-- سيتم ملء هذا الجدول بالبيانات من localStorage -->
+                    </tbody>
+                </table>
+                
+                <button id="saveAttendance" class="btn btn-success" style="margin-top: 20px;">حفظ التسجيل</button>
+            </div>
+        </section>
+        
+        <!-- قسم البحث عن طالب -->
+        <section id="search" class="section">
+            <h2 class="section-title">البحث عن طالب</h2>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="ابحث باسم الطالب أو ولي الأمر...">
+                <button id="searchButton" class="btn">بحث</button>
+            </div>
+            
+            <div id="searchResults">
+                <!-- سيتم عرض نتائج البحث هنا -->
+            </div>
+        </section>
+        
+        <!-- قسم التقارير -->
+        <section id="reports" class="section">
+            <h2 class="section-title">تقارير الغياب</h2>
+            
+            <div class="form-group">
+                <label for="reportWeekSelect">اختر أسبوع لعرض التقرير:</label>
+                <select id="reportWeekSelect">
+                    <option value="">-- اختر أسبوع --</option>
+                </select>
+            </div>
+            
+            <div id="reportResults">
+                <!-- سيتم عرض التقرير هنا -->
+            </div>
+        </section>
+    </div>
+
+   <script>
+    
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgIJlNjgKmzKAEMpRcem3O0FN4Tz-uMEMRQfLNHSUMxzoW8g7JGyKC309zIHFIO5KusQ/exec"; // ضع هنا رابط Google Apps Script
+
+let students = [];
+let weeks = [];
+let attendance = {};
+
+// -------------------------
+// 📌 1) التعامل مع Google Sheets عبر Apps Script
+// -------------------------
+
+async function fetchStudents() {
+  const res = await fetch(`${SCRIPT_URL}?type=students`);
+  const data = await res.json();
+  // أول صف في الشيت هو العناوين (headers)، فنشيله
+  students = data.slice(1).map(row => ({
+    id: row[0],
+    name: row[1],
+    guardian: row[2],
+    studentPhone: row[3],
+    fatherPhone: row[4],
+    motherPhone: row[5]
+  }));
+  renderStudentsList();
+}
+
+async function fetchWeeks() {
+  const res = await fetch(`${SCRIPT_URL}?type=weeks`);
+  const data = await res.json();
+  weeks = data.slice(1).map(row => ({
+    id: row[0],
+    name: row[1],
+    date: row[2]
+  }));
+  renderWeeksList();
+  updateWeekSelect();
+  updateReportWeekSelect();
+}
+
+async function fetchAttendance() {
+  const res = await fetch(`${SCRIPT_URL}?type=attendance`);
+  const data = await res.json();
+  attendance = {};
+  data.slice(1).forEach(row => {
+    const studentId = row[0];
+    const weekId = row[1];
+    const status = row[3];
+    if (!attendance[weekId]) attendance[weekId] = {};
+    attendance[weekId][studentId] = status;
+  });
+}
+
+async function addStudent(student) {
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: "addStudent", ...student }),
+    headers: { "Content-Type": "application/json" }
+  });
+  alert("Student added successfully");
+  fetchStudents();
+}
+
+async function addWeek(week) {
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: "addWeek", ...week }),
+    headers: { "Content-Type": "application/json" }
+  });
+  alert("Week added successfully");
+  fetchWeeks();
+}
+
+async function addAttendance(attendanceData) {
+  await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: "addAttendance", ...attendanceData }),
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+// -------------------------
+// 📌 2) إدارة الطلاب
+// -------------------------
+document.getElementById("studentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const student = {
+    id: Date.now(),
+    name: document.getElementById("studentName").value,
+    guardian: document.getElementById("guardianName").value,
+    studentPhone: document.getElementById("studentPhone").value,
+    fatherPhone: document.getElementById("fatherPhone").value,
+    motherPhone: document.getElementById("motherPhone").value
+  };
+  await addStudent(student);
+  document.getElementById("studentForm").reset();
+});
+
+function renderStudentsList() {
+  const tbody = document.getElementById("studentsTableBody");
+  tbody.innerHTML = "";
+  students.forEach(student => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${student.name}</td>
+      <td>${student.guardian}</td>
+      <td>${student.studentPhone || "N/A"}</td>
+      <td>${student.fatherPhone}</td>
+      <td>${student.motherPhone}</td>
+      <td>
+        <button class="btn" style="background:#e74c3c;color:white" onclick="deleteStudent('${student.id}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteStudent(id) {
+  alert("Delete function not connected to Google Sheets yet!");
+}
+
+// -------------------------
+// 📌 3) إدارة الأسابيع
+// -------------------------
+document.getElementById("weekForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const week = {
+    id: Date.now(),
+    name: document.getElementById("weekName").value,
+    date: document.getElementById("weekDate").value
+  };
+  await addWeek(week);
+  document.getElementById("weekForm").reset();
+});
+
+function renderWeeksList() {
+  const tbody = document.getElementById("weeksTableBody");
+  tbody.innerHTML = "";
+  weeks.forEach(week => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${week.name}</td>
+      <td>${week.date}</td>
+      <td>${students.length}</td>
+      <td>
+        <button class="btn" style="background:#e74c3c;color:white">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateWeekSelect() {
+  const select = document.getElementById("weekSelect");
+  select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+  weeks.forEach(week => {
+    const option = document.createElement("option");
+    option.value = week.id;
+    option.textContent = `${week.name} (${week.date})`;
+    select.appendChild(option);
+  });
+}
+
+function updateReportWeekSelect() {
+  const select = document.getElementById("reportWeekSelect");
+  select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+  weeks.forEach(week => {
+    const option = document.createElement("option");
+    option.value = week.id;
+    option.textContent = `${week.name} (${week.date})`;
+    select.appendChild(option);
+  });
+}
+
+// -------------------------
+// 📌 4) تسجيل الحضور والغياب
+// -------------------------
+document.getElementById("weekSelect").addEventListener("change", function() {
+  const weekId = this.value;
+  const container = document.getElementById("attendanceTableContainer");
+  if (weekId) {
+    container.style.display = "block";
+    renderAttendanceTable(weekId);
+  } else {
+    container.style.display = "none";
+  }
+});
+
+function renderAttendanceTable(weekId) {
+  const tbody = document.getElementById("attendanceTableBody");
+  tbody.innerHTML = "";
+  students.forEach(student => {
+    const status = (attendance[weekId] && attendance[weekId][student.id]) || "present";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${student.name}</td>
+      <td class="attendance-check">
+        <input type="radio" name="attendance-${student.id}" value="present" ${status === "present" ? "checked" : ""}>
+      </td>
+      <td class="attendance-check">
+        <input type="radio" name="attendance-${student.id}" value="absent" ${status === "absent" ? "checked" : ""}>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById("saveAttendance").addEventListener("click", async () => {
+  const weekId = document.getElementById("weekSelect").value;
+  if (!weekId) {
+    alert("Please select a week first!");
+    return;
+  }
+  for (const student of students) {
+    const selectedValue = document.querySelector(`input[name="attendance-${student.id}"]:checked`).value;
+    await addAttendance({
+      studentId: student.id,
+      weekId: weekId,
+      date: new Date().toISOString().split("T")[0],
+      status: selectedValue
+    });
+  }
+  alert("Attendance saved!");
+  fetchAttendance();
+});
+
+// -------------------------
+// 📌 5) البحث
+// -------------------------
+document.getElementById("searchButton").addEventListener("click", function() {
+  const query = document.getElementById("searchInput").value.toLowerCase();
+  const results = students.filter(student =>
+    student.name.toLowerCase().includes(query) || student.guardian.toLowerCase().includes(query)
+  );
+  displaySearchResults(results);
+});
+
+function displaySearchResults(results) {
+  const container = document.getElementById("searchResults");
+  if (results.length === 0) {
+    container.innerHTML = '<div class="alert">No results found</div>';
+    return;
+  }
+  let html = '<div class="cards-container">';
+  results.forEach(student => {
+    let absentCount = 0;
+    for (const weekId in attendance) {
+      if (attendance[weekId][student.id] === "absent") absentCount++;
+    }
+    html += `
+      <div class="card">
+        <h3 class="card-title">${student.name}</h3>
+        <div class="card-detail"><strong>Guardian:</strong> ${student.guardian}</div>
+        <div class="card-detail"><strong>Student Phone:</strong> ${student.studentPhone || "N/A"}</div>
+        <div class="card-detail"><strong>Father Phone:</strong> ${student.fatherPhone}</div>
+        <div class="card-detail"><strong>Mother Phone:</strong> ${student.motherPhone}</div>
+        <div class="card-detail"><strong>Absences:</strong> ${absentCount}</div>
+      </div>
+    `;
+  });
+  html += "</div>";
+  container.innerHTML = html;
+}
+
+// -------------------------
+// 📌 6) التقارير
+// -------------------------
+document.getElementById("reportWeekSelect").addEventListener("change", function() {
+  const weekId = this.value;
+  if (weekId) {
+    displayAttendanceReport(weekId);
+  } else {
+    document.getElementById("reportResults").innerHTML = "";
+  }
+});
+
+function displayAttendanceReport(weekId) {
+  const week = weeks.find(w => w.id == weekId);
+  const weekAttendance = attendance[weekId] || {};
+  let presentCount = 0, absentCount = 0;
+  for (const studentId in weekAttendance) {
+    if (weekAttendance[studentId] === "present") presentCount++;
+    else absentCount++;
+  }
+  let html = `
+    <h3>Report: ${week.name}</h3>
+    <div class="card">
+      <div class="card-detail"><strong>Date:</strong> ${week.date}</div>
+      <div class="card-detail"><strong>Total Students:</strong> ${students.length}</div>
+      <div class="card-detail"><strong>Present:</strong> ${presentCount}</div>
+      <div class="card-detail"><strong>Absent:</strong> ${absentCount}</div>
+    </div>
+    <h3 style="margin-top:20px;">Details</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Status</th></tr></thead>
+      <tbody>
+  `;
+  students.forEach(student => {
+    const status = weekAttendance[student.id] === "absent" ? "Absent" : "Present";
+    const statusClass = weekAttendance[student.id] === "absent" ? "absent" : "present";
+    html += `
+      <tr>
+        <td>${student.name}</td>
+        <td class="${statusClass}">${status}</td>
+      </tr>
+    `;
+  });
+  html += "</tbody></table>";
+  document.getElementById("reportResults").innerHTML = html;
+}
+
+// -------------------------
+// 📌 7) تحميل البيانات عند فتح الصفحة
+// -------------------------
+window.addEventListener("DOMContentLoaded", () => {
+  fetchStudents();
+  fetchWeeks();
+  fetchAttendance();
+});
+
+   </script>
+
+</body>
+
+</html>
+
+
+
+
