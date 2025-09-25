@@ -763,19 +763,7 @@ async function deleteWeek(id) {
 // -------------------------
 // 📌 2) إدارة الطلاب
 // -------------------------
-document.getElementById("studentForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const student = {
-    id: Date.now(),
-    name: document.getElementById("studentName").value,
-    guardian: document.getElementById("guardianName").value,
-    studentPhone: document.getElementById("studentPhone").value,
-    fatherPhone: document.getElementById("fatherPhone").value,
-    motherPhone: document.getElementById("motherPhone").value
-  };
-  await addStudent(student);
-  document.getElementById("studentForm").reset();
-});
+
 
 function renderStudentsList() {
   const tbody = document.getElementById("studentsTableBody");
@@ -1117,4 +1105,5 @@ window.addEventListener("DOMContentLoaded", () => {
 </body>
 
 </html>
+
 
