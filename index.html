@@ -593,9 +593,97 @@
         ::-webkit-scrollbar-thumb:hover {
           background: var(--primary);
         }
+
+        /* تحميل */
+        .loading-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+          backdrop-filter: blur(5px);
+        }
+
+        .loading-spinner {
+          width: 60px;
+          height: 60px;
+          border: 4px solid rgba(255, 255, 255, 0.1);
+          border-left: 4px solid var(--primary);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+          color: white;
+          margin-top: 15px;
+          font-size: 18px;
+          text-align: center;
+        }
+
+        .btn-loading {
+          position: relative;
+          pointer-events: none;
+          opacity: 0.7;
+        }
+
+        .btn-loading::after {
+          content: '';
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          top: 50%;
+          left: 50%;
+          margin-left: -8px;
+          margin-top: -8px;
+          border: 2px solid transparent;
+          border-top: 2px solid #ffffff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 20px;
+          background: var(--success);
+          color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+          z-index: 1000;
+          transform: translateX(150%);
+          transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+          transform: translateX(0);
+        }
+
+        .notification.error {
+          background: var(--accent);
+        }
         </style>
 </head>
 <body>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div>
+            <div class="loading-spinner"></div>
+            <div class="loading-text">جاري التحميل...</div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
     <header>
         <div class="container">
             <div class="logo">
@@ -652,7 +740,7 @@
                     <input type="tel" id="motherPhone" required>
                 </div>
                 
-                <button type="submit" class="btn">إضافة الطالب</button>
+                <button type="submit" class="btn" id="submitStudentBtn">إضافة الطالب</button>
             </form>
             
             <div id="studentsList" style="margin-top: 30px;">
@@ -670,7 +758,7 @@
                             </tr>
                         </thead>
                         <tbody id="studentsTableBody">
-                            <!-- سيتم ملء هذا الجدول بالبيانات من localStorage -->
+                            <!-- سيتم ملء هذا الجدول بالبيانات من Google Sheets -->
                         </tbody>
                     </table>
                 </div>
@@ -692,7 +780,7 @@
                     <input type="date" id="weekDate" required>
                 </div>
                 
-                <button type="submit" class="btn">إضافة أسبوع جديد</button>
+                <button type="submit" class="btn" id="submitWeekBtn">إضافة أسبوع جديد</button>
             </form>
             
             <div id="weeksList" style="margin-top: 30px;">
@@ -708,7 +796,7 @@
                             </tr>
                         </thead>
                         <tbody id="weeksTableBody">
-                            <!-- سيتم ملء هذا الجدول بالبيانات من localStorage -->
+                            <!-- سيتم ملء هذا الجدول بالبيانات من Google Sheets -->
                         </tbody>
                     </table>
                 </div>
@@ -738,7 +826,7 @@
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
-                            <!-- سيتم ملء هذا الجدول بالبيانات من localStorage -->
+                            <!-- سيتم ملء هذا الجدول بالبيانات من Google Sheets -->
                         </tbody>
                     </table>
                 </div>
@@ -779,523 +867,577 @@
     </div>
 
    <script>
-    
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgIJlNjgKmzKAEMpRcem3O0FN4Tz-uMEMRQfLNHSUMxzoW8g7JGyKC309zIHFIO5KusQ/exec"; // ضع هنا رابط Google Apps Script
+    // إعدادات البروكسي والطلبات
+    const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgIJlNjgKmzKAEMpRcem3O0FN4Tz-uMEMRQfLNHSUMxzoW8g7JGyKC309zIHFIO5KusQ/exec";
 
-let students = [];
-let weeks = [];
-let attendance = {};
+    let students = [];
+    let weeks = [];
+    let attendance = {};
+    let isLoading = false;
 
-// -------------------------
-// 📌 1) التعامل مع Google Sheets عبر Apps Script
-// -------------------------
-
-async function fetchStudents() {
-  try {
-    const res = await fetch(`${SCRIPT_URL}?type=students`);
-    const data = await res.json();
-    // أول صف في الشيت هو العناوين (headers)، فنشيله
-    students = data.slice(1).map(row => ({
-      id: row[0],
-      name: row[1],
-      guardian: row[2],
-      studentPhone: row[3],
-      fatherPhone: row[4],
-      motherPhone: row[5]
-    }));
-    renderStudentsList();
-  } catch (error) {
-    console.error("Error fetching students:", error);
-    // استخدام بيانات تجريبية في حالة فشل الاتصال
-    students = [
-      { id: 1, name: "محمد أحمد", guardian: "أحمد محمد", studentPhone: "0123456789", fatherPhone: "0123456789", motherPhone: "0123456789" },
-      { id: 2, name: "أحمد محمود", guardian: "محمود أحمد", studentPhone: "0123456789", fatherPhone: "0123456789", motherPhone: "0123456789" }
-    ];
-    renderStudentsList();
-  }
-}
-
-async function fetchWeeks() {
-  try {
-    const res = await fetch(`${SCRIPT_URL}?type=weeks`);
-    const data = await res.json();
-    weeks = data.slice(1).map(row => ({
-      id: row[0],
-      name: row[1],
-      date: row[2]
-    }));
-    renderWeeksList();
-    updateWeekSelect();
-    updateReportWeekSelect();
-  } catch (error) {
-    console.error("Error fetching weeks:", error);
-    // استخدام بيانات تجريبية في حالة فشل الاتصال
-    weeks = [
-      { id: 1, name: "الأسبوع الأول", date: "2023-09-01" },
-      { id: 2, name: "الأسبوع الثاني", date: "2023-09-08" }
-    ];
-    renderWeeksList();
-    updateWeekSelect();
-    updateReportWeekSelect();
-  }
-}
-
-async function fetchAttendance() {
-  try {
-    const res = await fetch(`${SCRIPT_URL}?type=attendance`);
-    const data = await res.json();
-    attendance = {};
-    data.slice(1).forEach(row => {
-      const studentId = row[0];
-      const weekId = row[1];
-      const status = row[3];
-      if (!attendance[weekId]) attendance[weekId] = {};
-      attendance[weekId][studentId] = status;
-    });
-  } catch (error) {
-    console.error("Error fetching attendance:", error);
-    // استخدام بيانات تجريبية في حالة فشل الاتصال
-    attendance = {
-      1: { 1: "present", 2: "absent" },
-      2: { 1: "absent", 2: "present" }
-    };
-  }
-}
-
-async function addStudent(student) {
-  try {
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",   // ✅ حل مشكلة CORS
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "addStudent", ...student })
-    });
-    alert("تم إضافة الطالب بنجاح");
-    fetchStudents(); // إعادة تحميل البيانات
-  } catch (error) {
-    console.error("Error adding student:", error);
-    alert("حدث خطأ أثناء إضافة الطالب. يرجى المحاولة مرة أخرى.");
-  }
-}
-
-async function addWeek(week) {
-  try {
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",   // ✅
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "addWeek", ...week })
-    });
-    alert("تم إضافة الأسبوع بنجاح");
-    fetchWeeks();
-  } catch (error) {
-    console.error("Error adding week:", error);
-    alert("حدث خطأ أثناء إضافة الأسبوع. يرجى المحاولة مرة أخرى.");
-  }
-}
-
-async function addAttendance(attendanceData) {
-  try {
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",   // ✅
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "addAttendance", ...attendanceData })
-    });
-  } catch (error) {
-    console.error("Error adding attendance:", error);
-    alert("حدث خطأ أثناء حفظ الحضور. يرجى المحاولة مرة أخرى.");
-  }
-}
-
-async function deleteStudent(id) {
-  if (confirm("هل أنت متأكد من حذف هذا الطالب؟")) {
-    try {
-      // 👈 تأكد إن id نص
-      const cleanId = String(id).trim();
-
-      await fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "deleteStudent", id: cleanId })
-      });
-
-      alert("تم طلب حذف الطالب (تحقق من الشيت للتأكيد)");
-      fetchStudents(); // إعادة تحميل البيانات
-    } catch (error) {
-      console.error("Error deleting student:", error);
-      alert("حدث خطأ في الاتصال. حاول مرة أخرى.");
+    // دالة محسنة للطلبات مع البروكسي
+    async function makeRequest(url, options = {}) {
+        if (isLoading) {
+            console.log('طلب قيد المعالجة بالفعل...');
+            return;
+        }
+        
+        isLoading = true;
+        showLoading();
+        
+        try {
+            const proxyUrl = PROXY_URL + url;
+            const response = await fetch(proxyUrl, options);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Request failed:', error);
+            showNotification('حدث خطأ في الاتصال بالخادم', 'error');
+            throw error;
+        } finally {
+            isLoading = false;
+            hideLoading();
+        }
     }
-  }
-}
 
-async function deleteWeek(id) {
-  if (confirm("هل أنت متأكد من حذف هذا الأسبوع؟")) {
-    try {
-      // 👈 تأكد إن id نص
-      const cleanId = String(id).trim();
-
-      await fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "deleteWeek", id: cleanId })
-      });
-
-      alert("تم طلب حذف الأسبوع (تحقق من الشيت للتأكيد)");
-      fetchWeeks(); // إعادة تحميل البيانات
-    } catch (error) {
-      console.error("Error deleting week:", error);
-      alert("حدث خطأ في الاتصال. حاول مرة أخرى.");
+    // دوال التحميل والإشعارات
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
     }
-  }
-}
 
-
-// -------------------------
-// 📌 2) إدارة الطلاب
-// -------------------------
-
-
-function renderStudentsList() {
-  const tbody = document.getElementById("studentsTableBody");
-  tbody.innerHTML = "";
-  students.forEach(student => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${student.name}</td>
-      <td>${student.guardian}</td>
-      <td>${student.studentPhone || "N/A"}</td>
-      <td>${student.fatherPhone}</td>
-      <td>${student.motherPhone}</td>
-      <td>
-        <div class="action-buttons">
-          <button class="btn btn-warning" onclick="editStudent('${student.id}')">تعديل</button>
-          <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function editStudent(id) {
-  const student = students.find(s => s.id == id);
-  if (student) {
-    document.getElementById("studentName").value = student.name;
-    document.getElementById("guardianName").value = student.guardian;
-    document.getElementById("studentPhone").value = student.studentPhone || "";
-    document.getElementById("fatherPhone").value = student.fatherPhone;
-    document.getElementById("motherPhone").value = student.motherPhone;
-    
-    // إضافة زر تحديث بدلاً من زر الإضافة
-    const submitButton = document.querySelector("#studentForm button");
-    submitButton.textContent = "تحديث الطالب";
-    submitButton.setAttribute("data-editing", id);
-    
-    // إضافة زر إلغاء التعديل
-    if (!document.getElementById("cancelEdit")) {
-      const cancelButton = document.createElement("button");
-      cancelButton.type = "button";
-      cancelButton.id = "cancelEdit";
-      cancelButton.className = "btn btn-warning";
-      cancelButton.textContent = "إلغاء التعديل";
-      cancelButton.style.marginRight = "10px";
-      cancelButton.onclick = cancelEdit;
-      document.getElementById("studentForm").insertBefore(cancelButton, submitButton);
+    function hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
     }
-  }
-}
 
-function cancelEdit() {
-  document.getElementById("studentForm").reset();
-  const submitButton = document.querySelector("#studentForm button");
-  submitButton.textContent = "إضافة الطالب";
-  submitButton.removeAttribute("data-editing");
-  
-  const cancelButton = document.getElementById("cancelEdit");
-  if (cancelButton) {
-    cancelButton.remove();
-  }
-}
-
-// تحديث مستمع الحدث للنموذج للتعامل مع التعديل
-document.getElementById("studentForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const submitButton = document.querySelector("#studentForm button");
-  const isEditing = submitButton.hasAttribute("data-editing");
-  
-  if (isEditing) {
-    const studentId = submitButton.getAttribute("data-editing");
-    // هنا يمكنك إضافة منطق التحديث
-    alert("وظيفة التحديث قيد التطوير");
-    cancelEdit();
-  } else {
-    const student = {
-      id: Date.now(),
-      name: document.getElementById("studentName").value,
-      guardian: document.getElementById("guardianName").value,
-      studentPhone: document.getElementById("studentPhone").value,
-      fatherPhone: document.getElementById("fatherPhone").value,
-      motherPhone: document.getElementById("motherPhone").value
-    };
-    await addStudent(student);
-    document.getElementById("studentForm").reset();
-  }
-});
-
-// -------------------------
-// 📌 3) إدارة الأسابيع
-// -------------------------
-document.getElementById("weekForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const week = {
-    id: Date.now(),
-    name: document.getElementById("weekName").value,
-    date: document.getElementById("weekDate").value
-  };
-  await addWeek(week);
-  document.getElementById("weekForm").reset();
-});
-
-function renderWeeksList() {
-  const tbody = document.getElementById("weeksTableBody");
-  tbody.innerHTML = "";
-  weeks.forEach(week => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${week.name}</td>
-      <td>${week.date}</td>
-      <td>${students.length}</td>
-      <td>
-        <div class="action-buttons">
-          <button class="btn btn-danger" onclick="deleteWeek('${week.id}')">حذف</button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function updateWeekSelect() {
-  const select = document.getElementById("weekSelect");
-  select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
-  weeks.forEach(week => {
-    const option = document.createElement("option");
-    option.value = week.id;
-    option.textContent = `${week.name} (${week.date})`;
-    select.appendChild(option);
-  });
-}
-
-function updateReportWeekSelect() {
-  const select = document.getElementById("reportWeekSelect");
-  select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
-  weeks.forEach(week => {
-    const option = document.createElement("option");
-    option.value = week.id;
-    option.textContent = `${week.name} (${week.date})`;
-    select.appendChild(option);
-  });
-}
-
-// -------------------------
-// 📌 4) تسجيل الحضور والغياب
-// -------------------------
-document.getElementById("weekSelect").addEventListener("change", function() {
-  const weekId = this.value;
-  const container = document.getElementById("attendanceTableContainer");
-  if (weekId) {
-    container.style.display = "block";
-    renderAttendanceTable(weekId);
-  } else {
-    container.style.display = "none";
-  }
-});
-
-function renderAttendanceTable(weekId) {
-  const tbody = document.getElementById("attendanceTableBody");
-  tbody.innerHTML = "";
-  students.forEach(student => {
-    const status = (attendance[weekId] && attendance[weekId][student.id]) || "present";
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${student.name}</td>
-      <td class="attendance-check">
-        <input type="radio" name="attendance-${student.id}" value="present" ${status === "present" ? "checked" : ""}>
-      </td>
-      <td class="attendance-check">
-        <input type="radio" name="attendance-${student.id}" value="absent" ${status === "absent" ? "checked" : ""}>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-document.getElementById("saveAttendance").addEventListener("click", async () => {
-  const weekId = document.getElementById("weekSelect").value;
-  if (!weekId) {
-    alert("يرجى اختيار أسبوع أولاً!");
-    return;
-  }
-  
-  // التحقق من اختيار حالة لكل طالب
-  let allSelected = true;
-  students.forEach(student => {
-    const selected = document.querySelector(`input[name="attendance-${student.id}"]:checked`);
-    if (!selected) {
-      allSelected = false;
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
     }
-  });
-  
-  if (!allSelected) {
-    alert("يرجى اختيار حالة (حضور/غياب) لكل الطلاب!");
-    return;
-  }
-  
-  for (const student of students) {
-    const selectedValue = document.querySelector(`input[name="attendance-${student.id}"]:checked`).value;
-    await addAttendance({
-      studentId: student.id,
-      weekId: weekId,
-      date: new Date().toISOString().split("T")[0],
-      status: selectedValue
+
+    function setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.classList.add('btn-loading');
+            button.disabled = true;
+        } else {
+            button.classList.remove('btn-loading');
+            button.disabled = false;
+        }
+    }
+
+    // -------------------------
+    // 📌 1) التعامل مع Google Sheets عبر Apps Script مع البروكسي
+    // -------------------------
+
+    async function fetchStudents() {
+        try {
+            const data = await makeRequest(`${SCRIPT_URL}?type=students`);
+            students = data.slice(1).map(row => ({
+                id: String(row[0]),
+                name: row[1],
+                guardian: row[2],
+                studentPhone: row[3],
+                fatherPhone: row[4],
+                motherPhone: row[5]
+            }));
+            renderStudentsList();
+        } catch (error) {
+            console.error("Error fetching students:", error);
+            showNotification('فشل في تحميل بيانات الطلاب', 'error');
+        }
+    }
+
+    async function fetchWeeks() {
+        try {
+            const data = await makeRequest(`${SCRIPT_URL}?type=weeks`);
+            weeks = data.slice(1).map(row => ({
+                id: String(row[0]),
+                name: row[1],
+                date: row[2]
+            }));
+            renderWeeksList();
+            updateWeekSelect();
+            updateReportWeekSelect();
+        } catch (error) {
+            console.error("Error fetching weeks:", error);
+            showNotification('فشل في تحميل بيانات الأسابيع', 'error');
+        }
+    }
+
+    async function fetchAttendance() {
+        try {
+            const data = await makeRequest(`${SCRIPT_URL}?type=attendance`);
+            attendance = {};
+            data.slice(1).forEach(row => {
+                const studentId = String(row[0]);
+                const weekId = String(row[1]);
+                const status = row[3];
+                if (!attendance[weekId]) attendance[weekId] = {};
+                attendance[weekId][studentId] = status;
+            });
+        } catch (error) {
+            console.error("Error fetching attendance:", error);
+            showNotification('فشل في تحميل بيانات الحضور', 'error');
+        }
+    }
+
+    async function addStudent(student) {
+        const button = document.getElementById('submitStudentBtn');
+        setButtonLoading(button, true);
+        
+        try {
+            await makeRequest(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "addStudent", ...student })
+            });
+            
+            showNotification('تم إضافة الطالب بنجاح');
+            await fetchStudents();
+            document.getElementById("studentForm").reset();
+        } catch (error) {
+            console.error("Error adding student:", error);
+            showNotification('حدث خطأ أثناء إضافة الطالب', 'error');
+        } finally {
+            setButtonLoading(button, false);
+        }
+    }
+
+    async function addWeek(week) {
+        const button = document.getElementById('submitWeekBtn');
+        setButtonLoading(button, true);
+        
+        try {
+            await makeRequest(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "addWeek", ...week })
+            });
+            
+            showNotification('تم إضافة الأسبوع بنجاح');
+            await fetchWeeks();
+            document.getElementById("weekForm").reset();
+        } catch (error) {
+            console.error("Error adding week:", error);
+            showNotification('حدث خطأ أثناء إضافة الأسبوع', 'error');
+        } finally {
+            setButtonLoading(button, false);
+        }
+    }
+
+    async function addAttendance(attendanceData) {
+        try {
+            await makeRequest(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "addAttendance", ...attendanceData })
+            });
+        } catch (error) {
+            console.error("Error adding attendance:", error);
+            throw error;
+        }
+    }
+
+    async function deleteStudent(id) {
+        if (confirm("هل أنت متأكد من حذف هذا الطالب؟")) {
+            try {
+                await makeRequest(SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "deleteStudent", id: String(id) })
+                });
+                
+                showNotification('تم حذف الطالب بنجاح');
+                await fetchStudents();
+            } catch (error) {
+                console.error("Error deleting student:", error);
+                showNotification('حدث خطأ أثناء حذف الطالب', 'error');
+            }
+        }
+    }
+
+    async function deleteWeek(id) {
+        if (confirm("هل أنت متأكد من حذف هذا الأسبوع؟")) {
+            try {
+                await makeRequest(SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "deleteWeek", id: String(id) })
+                });
+                
+                showNotification('تم حذف الأسبوع بنجاح');
+                await fetchWeeks();
+            } catch (error) {
+                console.error("Error deleting week:", error);
+                showNotification('حدث خطأ أثناء حذف الأسبوع', 'error');
+            }
+        }
+    }
+
+    // -------------------------
+    // 📌 2) إدارة الطلاب
+    // -------------------------
+
+    function renderStudentsList() {
+        const tbody = document.getElementById("studentsTableBody");
+        tbody.innerHTML = "";
+        students.forEach(student => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${student.name}</td>
+                <td>${student.guardian}</td>
+                <td>${student.studentPhone || "N/A"}</td>
+                <td>${student.fatherPhone}</td>
+                <td>${student.motherPhone}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-warning" onclick="editStudent('${student.id}')">تعديل</button>
+                        <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function editStudent(id) {
+        const student = students.find(s => s.id == id);
+        if (student) {
+            document.getElementById("studentName").value = student.name;
+            document.getElementById("guardianName").value = student.guardian;
+            document.getElementById("studentPhone").value = student.studentPhone || "";
+            document.getElementById("fatherPhone").value = student.fatherPhone;
+            document.getElementById("motherPhone").value = student.motherPhone;
+            
+            const submitButton = document.querySelector("#studentForm button");
+            submitButton.textContent = "تحديث الطالب";
+            submitButton.setAttribute("data-editing", id);
+            
+            if (!document.getElementById("cancelEdit")) {
+                const cancelButton = document.createElement("button");
+                cancelButton.type = "button";
+                cancelButton.id = "cancelEdit";
+                cancelButton.className = "btn btn-warning";
+                cancelButton.textContent = "إلغاء التعديل";
+                cancelButton.style.marginRight = "10px";
+                cancelButton.onclick = cancelEdit;
+                document.getElementById("studentForm").insertBefore(cancelButton, submitButton);
+            }
+        }
+    }
+
+    function cancelEdit() {
+        document.getElementById("studentForm").reset();
+        const submitButton = document.querySelector("#studentForm button");
+        submitButton.textContent = "إضافة الطالب";
+        submitButton.removeAttribute("data-editing");
+        
+        const cancelButton = document.getElementById("cancelEdit");
+        if (cancelButton) {
+            cancelButton.remove();
+        }
+    }
+
+    // تحديث مستمع الحدث للنموذج للتعامل مع التعديل
+    document.getElementById("studentForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const submitButton = document.querySelector("#studentForm button");
+        const isEditing = submitButton.hasAttribute("data-editing");
+        
+        if (isEditing) {
+            const studentId = submitButton.getAttribute("data-editing");
+            alert("وظيفة التحديث قيد التطوير");
+            cancelEdit();
+        } else {
+            const student = {
+                id: Date.now().toString(),
+                name: document.getElementById("studentName").value,
+                guardian: document.getElementById("guardianName").value,
+                studentPhone: document.getElementById("studentPhone").value,
+                fatherPhone: document.getElementById("fatherPhone").value,
+                motherPhone: document.getElementById("motherPhone").value
+            };
+            await addStudent(student);
+        }
     });
-  }
-  alert("تم حفظ الحضور بنجاح!");
-  fetchAttendance();
-});
 
-// -------------------------
-// 📌 5) البحث
-// -------------------------
-document.getElementById("searchButton").addEventListener("click", function() {
-  const query = document.getElementById("searchInput").value.toLowerCase();
-  const results = students.filter(student =>
-    student.name.toLowerCase().includes(query) || student.guardian.toLowerCase().includes(query)
-  );
-  displaySearchResults(results);
-});
-
-// السماح بالبحث عند الضغط على Enter
-document.getElementById("searchInput").addEventListener("keypress", function(e) {
-  if (e.key === "Enter") {
-    document.getElementById("searchButton").click();
-  }
-});
-
-function displaySearchResults(results) {
-  const container = document.getElementById("searchResults");
-  if (results.length === 0) {
-    container.innerHTML = '<div class="alert">لم يتم العثور على نتائج</div>';
-    return;
-  }
-  let html = '<div class="cards-container">';
-  results.forEach(student => {
-    let absentCount = 0;
-    for (const weekId in attendance) {
-      if (attendance[weekId][student.id] === "absent") absentCount++;
-    }
-    html += `
-      <div class="card">
-        <h3 class="card-title">${student.name}</h3>
-        <div class="card-detail"><strong>ولي الأمر:</strong> ${student.guardian}</div>
-        <div class="card-detail"><strong>هاتف الطالب:</strong> ${student.studentPhone || "N/A"}</div>
-        <div class="card-detail"><strong>هاتف الأب:</strong> ${student.fatherPhone}</div>
-        <div class="card-detail"><strong>هاتف الأم:</strong> ${student.motherPhone}</div>
-        <div class="card-detail"><strong>عدد مرات الغياب:</strong> ${absentCount}</div>
-      </div>
-    `;
-  });
-  html += "</div>";
-  container.innerHTML = html;
-}
-
-// -------------------------
-// 📌 6) التقارير
-// -------------------------
-document.getElementById("reportWeekSelect").addEventListener("change", function() {
-  const weekId = this.value;
-  if (weekId) {
-    displayAttendanceReport(weekId);
-  } else {
-    document.getElementById("reportResults").innerHTML = "";
-  }
-});
-
-function displayAttendanceReport(weekId) {
-  const week = weeks.find(w => w.id == weekId);
-  const weekAttendance = attendance[weekId] || {};
-  let presentCount = 0, absentCount = 0;
-  for (const studentId in weekAttendance) {
-    if (weekAttendance[studentId] === "present") presentCount++;
-    else absentCount++;
-  }
-  let html = `
-    <h3>تقرير: ${week.name}</h3>
-    <div class="card">
-      <div class="card-detail"><strong>التاريخ:</strong> ${week.date}</div>
-      <div class="card-detail"><strong>إجمالي الطلاب:</strong> ${students.length}</div>
-      <div class="card-detail"><strong>الحاضرون:</strong> ${presentCount}</div>
-      <div class="card-detail"><strong>الغائبون:</strong> ${absentCount}</div>
-    </div>
-    <h3 style="margin-top:20px;">التفاصيل</h3>
-    <div class="table-container">
-      <table>
-        <thead><tr><th>الاسم</th><th>الحالة</th></tr></thead>
-        <tbody>
-  `;
-  students.forEach(student => {
-    const status = weekAttendance[student.id] === "absent" ? "غائب" : "حاضر";
-    const statusClass = weekAttendance[student.id] === "absent" ? "absent" : "present";
-    html += `
-      <tr>
-        <td>${student.name}</td>
-        <td class="${statusClass}">${status}</td>
-      </tr>
-    `;
-  });
-  html += "</tbody></table></div>";
-  document.getElementById("reportResults").innerHTML = html;
-}
-
-// -------------------------
-// 📌 7) التنقل بين الأقسام
-// -------------------------
-document.querySelectorAll(".nav-link").forEach(link => {
-  link.addEventListener("click", function(e) {
-    e.preventDefault();
-    
-    // إزالة النشاط من جميع الروابط
-    document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
-    
-    // إضافة النشاط للرابط المختار
-    this.classList.add("active");
-    
-    // إخفاء جميع الأقسام
-    document.querySelectorAll(".section").forEach(section => {
-      section.classList.remove("active");
+    // -------------------------
+    // 📌 3) إدارة الأسابيع
+    // -------------------------
+    document.getElementById("weekForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const week = {
+            id: Date.now().toString(),
+            name: document.getElementById("weekName").value,
+            date: document.getElementById("weekDate").value
+        };
+        await addWeek(week);
     });
-    
-    // إظهار القسم المختار
-    const sectionId = this.getAttribute("data-section");
-    document.getElementById(sectionId).classList.add("active");
-  });
-});
 
-// -------------------------
-// 📌 8) تحميل البيانات عند فتح الصفحة
-// -------------------------
-window.addEventListener("DOMContentLoaded", () => {
-  fetchStudents();
-  fetchWeeks();
-  fetchAttendance();
-});
+    function renderWeeksList() {
+        const tbody = document.getElementById("weeksTableBody");
+        tbody.innerHTML = "";
+        weeks.forEach(week => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${week.name}</td>
+                <td>${week.date}</td>
+                <td>${students.length}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-danger" onclick="deleteWeek('${week.id}')">حذف</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateWeekSelect() {
+        const select = document.getElementById("weekSelect");
+        select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+        weeks.forEach(week => {
+            const option = document.createElement("option");
+            option.value = week.id;
+            option.textContent = `${week.name} (${week.date})`;
+            select.appendChild(option);
+        });
+    }
+
+    function updateReportWeekSelect() {
+        const select = document.getElementById("reportWeekSelect");
+        select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+        weeks.forEach(week => {
+            const option = document.createElement("option");
+            option.value = week.id;
+            option.textContent = `${week.name} (${week.date})`;
+            select.appendChild(option);
+        });
+    }
+
+    // -------------------------
+    // 📌 4) تسجيل الحضور والغياب
+    // -------------------------
+    document.getElementById("weekSelect").addEventListener("change", function() {
+        const weekId = this.value;
+        const container = document.getElementById("attendanceTableContainer");
+        if (weekId) {
+            container.style.display = "block";
+            renderAttendanceTable(weekId);
+        } else {
+            container.style.display = "none";
+        }
+    });
+
+    function renderAttendanceTable(weekId) {
+        const tbody = document.getElementById("attendanceTableBody");
+        tbody.innerHTML = "";
+        students.forEach(student => {
+            const status = (attendance[weekId] && attendance[weekId][student.id]) || "present";
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${student.name}</td>
+                <td class="attendance-check">
+                    <input type="radio" name="attendance-${student.id}" value="present" ${status === "present" ? "checked" : ""}>
+                </td>
+                <td class="attendance-check">
+                    <input type="radio" name="attendance-${student.id}" value="absent" ${status === "absent" ? "checked" : ""}>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    document.getElementById("saveAttendance").addEventListener("click", async () => {
+        const weekId = document.getElementById("weekSelect").value;
+        if (!weekId) {
+            showNotification("يرجى اختيار أسبوع أولاً!", "error");
+            return;
+        }
+        
+        let allSelected = true;
+        students.forEach(student => {
+            const selected = document.querySelector(`input[name="attendance-${student.id}"]:checked`);
+            if (!selected) {
+                allSelected = false;
+            }
+        });
+        
+        if (!allSelected) {
+            showNotification("يرجى اختيار حالة (حضور/غياب) لكل الطلاب!", "error");
+            return;
+        }
+        
+        const button = document.getElementById('saveAttendance');
+        setButtonLoading(button, true);
+        
+        try {
+            for (const student of students) {
+                const selectedValue = document.querySelector(`input[name="attendance-${student.id}"]:checked`).value;
+                await addAttendance({
+                    studentId: student.id,
+                    weekId: weekId,
+                    date: new Date().toISOString().split("T")[0],
+                    status: selectedValue
+                });
+            }
+            showNotification("تم حفظ الحضور بنجاح!");
+            await fetchAttendance();
+        } catch (error) {
+            showNotification("حدث خطأ أثناء حفظ الحضور", "error");
+        } finally {
+            setButtonLoading(button, false);
+        }
+    });
+
+    // -------------------------
+    // 📌 5) البحث
+    // -------------------------
+    document.getElementById("searchButton").addEventListener("click", function() {
+        const query = document.getElementById("searchInput").value.toLowerCase();
+        const results = students.filter(student =>
+            student.name.toLowerCase().includes(query) || student.guardian.toLowerCase().includes(query)
+        );
+        displaySearchResults(results);
+    });
+
+    document.getElementById("searchInput").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            document.getElementById("searchButton").click();
+        }
+    });
+
+    function displaySearchResults(results) {
+        const container = document.getElementById("searchResults");
+        if (results.length === 0) {
+            container.innerHTML = '<div class="alert">لم يتم العثور على نتائج</div>';
+            return;
+        }
+        let html = '<div class="cards-container">';
+        results.forEach(student => {
+            let absentCount = 0;
+            for (const weekId in attendance) {
+                if (attendance[weekId][student.id] === "absent") absentCount++;
+            }
+            html += `
+                <div class="card">
+                    <h3 class="card-title">${student.name}</h3>
+                    <div class="card-detail"><strong>ولي الأمر:</strong> ${student.guardian}</div>
+                    <div class="card-detail"><strong>هاتف الطالب:</strong> ${student.studentPhone || "N/A"}</div>
+                    <div class="card-detail"><strong>هاتف الأب:</strong> ${student.fatherPhone}</div>
+                    <div class="card-detail"><strong>هاتف الأم:</strong> ${student.motherPhone}</div>
+                    <div class="card-detail"><strong>عدد مرات الغياب:</strong> ${absentCount}</div>
+                </div>
+            `;
+        });
+        html += "</div>";
+        container.innerHTML = html;
+    }
+
+    // -------------------------
+    // 📌 6) التقارير
+    // -------------------------
+    document.getElementById("reportWeekSelect").addEventListener("change", function() {
+        const weekId = this.value;
+        if (weekId) {
+            displayAttendanceReport(weekId);
+        } else {
+            document.getElementById("reportResults").innerHTML = "";
+        }
+    });
+
+    function displayAttendanceReport(weekId) {
+        const week = weeks.find(w => w.id == weekId);
+        const weekAttendance = attendance[weekId] || {};
+        let presentCount = 0, absentCount = 0;
+        for (const studentId in weekAttendance) {
+            if (weekAttendance[studentId] === "present") presentCount++;
+            else absentCount++;
+        }
+        let html = `
+            <h3>تقرير: ${week.name}</h3>
+            <div class="card">
+                <div class="card-detail"><strong>التاريخ:</strong> ${week.date}</div>
+                <div class="card-detail"><strong>إجمالي الطلاب:</strong> ${students.length}</div>
+                <div class="card-detail"><strong>الحاضرون:</strong> ${presentCount}</div>
+                <div class="card-detail"><strong>الغائبون:</strong> ${absentCount}</div>
+            </div>
+            <h3 style="margin-top:20px;">التفاصيل</h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>الاسم</th><th>الحالة</th></tr></thead>
+                    <tbody>
+        `;
+        students.forEach(student => {
+            const status = weekAttendance[student.id] === "absent" ? "غائب" : "حاضر";
+            const statusClass = weekAttendance[student.id] === "absent" ? "absent" : "present";
+            html += `
+                <tr>
+                    <td>${student.name}</td>
+                    <td class="${statusClass}">${status}</td>
+                </tr>
+            `;
+        });
+        html += "</tbody></table></div>";
+        document.getElementById("reportResults").innerHTML = html;
+    }
+
+    // -------------------------
+    // 📌 7) التنقل بين الأقسام
+    // -------------------------
+    document.querySelectorAll(".nav-link").forEach(link => {
+        link.addEventListener("click", function(e) {
+            e.preventDefault();
+            
+            document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+            this.classList.add("active");
+            
+            document.querySelectorAll(".section").forEach(section => {
+                section.classList.remove("active");
+            });
+            
+            const sectionId = this.getAttribute("data-section");
+            document.getElementById(sectionId).classList.add("active");
+        });
+    });
+
+    // -------------------------
+    // 📌 8) تحميل البيانات عند فتح الصفحة
+    // -------------------------
+    async function loadAllData() {
+        showLoading();
+        try {
+            await Promise.all([
+                fetchStudents(),
+                fetchWeeks(),
+                fetchAttendance()
+            ]);
+        } catch (error) {
+            console.error("Error loading data:", error);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        loadAllData();
+    });
 
    </script>
 
 </body>
+</html>
 
 
 
