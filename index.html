@@ -1056,7 +1056,9 @@
         let students = [];
         let weeks = [];
         let attendance = {};
-    
+    // متغيرات لتخزين الحالة
+let currentSelectedWeek = '';
+let currentSelectedReportWeek = '';
         // -------------------------
         // 📌 1) إدارة التحميل المحسنة
         // -------------------------
@@ -1330,62 +1332,63 @@
         });
     
         // تحميل بيانات الحضور للأسبوع المحدد
-        function loadAttendanceForWeek(weekId) {
-            showLoading('attendanceLoading');
-            hideTable('attendanceTableContainer');
+       // دالة تحميل الحضور للأسبوع المحدد
+function loadAttendanceForWeek(weekId) {
+    showLoading('attendanceLoading');
+    hideTable('attendanceTableContainer');
+    
+    // تحميل الطلاب فقط عند اختيار الأسبوع
+    db.collection('students').get()
+    .then(studentsSnapshot => {
+        const tableBody = document.getElementById('attendanceTableBody');
+        tableBody.innerHTML = '';
+        
+        // تحميل بيانات الحضور لهذا الأسبوع
+        db.collection('attendance').where('weekId', '==', weekId).get()
+        .then(attendanceSnapshot => {
+            const attendanceData = {};
             
-            // تحميل الطلاب
-            db.collection('students').get()
-            .then(studentsSnapshot => {
-                const tableBody = document.getElementById('attendanceTableBody');
-                tableBody.innerHTML = '';
-                
-                // تحميل بيانات الحضور لهذا الأسبوع
-                db.collection('attendance').where('weekId', '==', weekId).get()
-                .then(attendanceSnapshot => {
-                    const attendanceData = {};
-                    
-                    attendanceSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        attendanceData[data.studentId] = data.present;
-                    });
-                    
-                    // إنشاء جدول الحضور
-                    studentsSnapshot.forEach(doc => {
-                        const student = { id: doc.id, ...doc.data() };
-                        const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
-                        
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${student.name}</td>
-                            <td class="attendance-toggle">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" ${isPresent ? 'checked' : ''} onchange="toggleAttendance('${student.id}', '${weekId}', this.checked)">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                                <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
-                                    ${isPresent ? 'حاضر' : 'غائب'}
-                                </span>
-                            </td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                    
-                    hideLoading('attendanceLoading');
-                    showTable('attendanceTableContainer');
-                })
-                .catch(error => {
-                    console.error('خطأ في تحميل بيانات الحضور:', error);
-                    hideLoading('attendanceLoading');
-                    alert('حدث خطأ أثناء تحميل بيانات الحضور.');
-                });
-            })
-            .catch(error => {
-                console.error('خطأ في تحميل الطلاب:', error);
-                hideLoading('attendanceLoading');
-                alert('حدث خطأ أثناء تحميل بيانات الطلاب.');
+            attendanceSnapshot.forEach(doc => {
+                const data = doc.data();
+                attendanceData[data.studentId] = data.present;
             });
-        }
+            
+            // إنشاء جدول الحضور فقط عند اختيار الأسبوع
+            studentsSnapshot.forEach(doc => {
+                const student = { id: doc.id, ...doc.data() };
+                const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td class="attendance-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" ${isPresent ? 'checked' : ''} onchange="toggleAttendance('${student.id}', '${weekId}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
+                            ${isPresent ? 'حاضر' : 'غائب'}
+                        </span>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            hideLoading('attendanceLoading');
+            showTable('attendanceTableContainer');
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل بيانات الحضور:', error);
+            hideLoading('attendanceLoading');
+            alert('حدث خطأ أثناء تحميل بيانات الحضور.');
+        });
+    })
+    .catch(error => {
+        console.error('خطأ في تحميل الطلاب:', error);
+        hideLoading('attendanceLoading');
+        alert('حدث خطأ أثناء تحميل بيانات الطلاب.');
+    });
+}
     
         // تبديل حالة الحضور
         function toggleAttendance(studentId, weekId, isPresent) {
@@ -1552,105 +1555,107 @@
         });
     
         // إنشاء تقرير الغياب
-        function generateReport(weekId) {
-            showLoading('reportLoading');
+        // إنشاء تقرير الغياب
+function generateReport(weekId) {
+    showLoading('reportLoading');
+    
+    // تحميل بيانات الحضور لهذا الأسبوع
+    db.collection('attendance').where('weekId', '==', weekId).get()
+    .then(attendanceSnapshot => {
+        const attendanceData = {};
+        let presentCount = 0;
+        let absentCount = 0;
+        
+        attendanceSnapshot.forEach(doc => {
+            const data = doc.data();
+            attendanceData[data.studentId] = data.present;
             
-            // تحميل بيانات الحضور لهذا الأسبوع
-            db.collection('attendance').where('weekId', '==', weekId).get()
-            .then(attendanceSnapshot => {
-                const attendanceData = {};
-                let presentCount = 0;
-                let absentCount = 0;
+            if (data.present) {
+                presentCount++;
+            } else {
+                absentCount++;
+            }
+        });
+        
+        // حساب النسب المئوية
+        const totalCount = presentCount + absentCount;
+        const presentPercentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+        const absentPercentage = totalCount > 0 ? Math.round((absentCount / totalCount) * 100) : 0;
+        
+        // إنشاء التقرير فقط عند اختيار الأسبوع
+        let reportHTML = `
+            <div class="stats-cards">
+                <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                    <div class="stat-number">${presentCount}</div>
+                    <div class="stat-label">عدد الحاضرين</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                    <div class="stat-number">${absentCount}</div>
+                    <div class="stat-label">عدد الغائبين</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                    <div class="stat-number">${presentPercentage}%</div>
+                    <div class="stat-label">نسبة الحضور</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <div class="stat-number">${absentPercentage}%</div>
+                    <div class="stat-label">نسبة الغياب</div>
+                </div>
+            </div>
+            
+            <h3>تفاصيل الغياب</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم الطالب</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        // تحميل أسماء الطلاب فقط عند اختيار الأسبوع
+        db.collection('students').get()
+        .then(studentsSnapshot => {
+            studentsSnapshot.forEach(doc => {
+                const student = { id: doc.id, ...doc.data() };
+                const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
                 
-                attendanceSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    attendanceData[data.studentId] = data.present;
-                    
-                    if (data.present) {
-                        presentCount++;
-                    } else {
-                        absentCount++;
-                    }
-                });
-                
-                // حساب النسب المئوية
-                const totalCount = presentCount + absentCount;
-                const presentPercentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
-                const absentPercentage = totalCount > 0 ? Math.round((absentCount / totalCount) * 100) : 0;
-                
-                // إنشاء التقرير
-                let reportHTML = `
-                    <div class="stats-cards">
-                        <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
-                            <div class="stat-number">${presentCount}</div>
-                            <div class="stat-label">عدد الحاضرين</div>
-                        </div>
-                        <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                            <div class="stat-number">${absentCount}</div>
-                            <div class="stat-label">عدد الغائبين</div>
-                        </div>
-                        <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
-                            <div class="stat-number">${presentPercentage}%</div>
-                            <div class="stat-label">نسبة الحضور</div>
-                        </div>
-                        <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-                            <div class="stat-number">${absentPercentage}%</div>
-                            <div class="stat-label">نسبة الغياب</div>
-                        </div>
-                    </div>
-                    
-                    <h3>تفاصيل الغياب</h3>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>اسم الطالب</th>
-                                    <th>الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                reportHTML += `
+                    <tr>
+                        <td>${student.name}</td>
+                        <td>
+                            <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
+                                ${isPresent ? 'حاضر' : 'غائب'}
+                            </span>
+                        </td>
+                    </tr>
                 `;
-                
-                // تحميل أسماء الطلاب
-                db.collection('students').get()
-                .then(studentsSnapshot => {
-                    studentsSnapshot.forEach(doc => {
-                        const student = { id: doc.id, ...doc.data() };
-                        const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
-                        
-                        reportHTML += `
-                            <tr>
-                                <td>${student.name}</td>
-                                <td>
-                                    <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
-                                        ${isPresent ? 'حاضر' : 'غائب'}
-                                    </span>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    
-                    reportHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                    `;
-                    
-                    document.getElementById('reportResults').innerHTML = reportHTML;
-                    hideLoading('reportLoading');
-                })
-                .catch(error => {
-                    console.error('خطأ في تحميل الطلاب:', error);
-                    hideLoading('reportLoading');
-                    alert('حدث خطأ أثناء تحميل بيانات الطلاب للتقرير.');
-                });
-            })
-            .catch(error => {
-                console.error('خطأ في تحميل بيانات الحضور:', error);
-                hideLoading('reportLoading');
-                alert('حدث خطأ أثناء تحميل بيانات الحضور للتقرير.');
             });
-        }
+            
+            reportHTML += `
+                    </tbody>
+                </table>
+            </div>
+            `;
+            
+            document.getElementById('reportResults').innerHTML = reportHTML;
+            hideLoading('reportLoading');
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل الطلاب:', error);
+            hideLoading('reportLoading');
+            alert('حدث خطأ أثناء تحميل بيانات الطلاب للتقرير.');
+        });
+    })
+    .catch(error => {
+        console.error('خطأ في تحميل بيانات الحضور:', error);
+        hideLoading('reportLoading');
+        alert('حدث خطأ أثناء تحميل بيانات الحضور للتقرير.');
+    });
+}
+
     </script>
 </body>
 </html>
