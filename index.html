@@ -526,25 +526,96 @@
           overflow-x: auto;
         }
         
-        .attendance-check {
-          text-align: center;
+        /* تصميم جديد لتبديل الحضور والغياب */
+        .attendance-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+        
+        .toggle-switch {
+          position: relative;
+          display: inline-block;
+          width: 60px;
+          height: 34px;
+        }
+        
+        .toggle-switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        
+        .toggle-slider {
+          position: absolute;
           cursor: pointer;
-          font-size: 18px;
-          transition: transform 0.2s ease;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: var(--accent);
+          transition: .4s;
+          border-radius: 34px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
-        .attendance-check:hover {
-          transform: scale(1.3);
+        .toggle-slider:before {
+          position: absolute;
+          content: "";
+          height: 26px;
+          width: 26px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
         
-        .present {
+        input:checked + .toggle-slider {
+          background-color: var(--success);
+        }
+        
+        input:checked + .toggle-slider:before {
+          transform: translateX(26px);
+        }
+        
+        .toggle-slider:after {
+          content: "✕";
+          color: white;
+          position: absolute;
+          top: 50%;
+          right: 10px;
+          transform: translateY(-50%);
+          font-size: 14px;
+          font-weight: bold;
+        }
+        
+        input:checked + .toggle-slider:after {
+          content: "✓";
+          left: 10px;
+          right: auto;
+        }
+        
+        .attendance-status {
+          font-weight: 600;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        }
+        
+        .status-present {
+          background: rgba(46, 204, 113, 0.2);
           color: var(--success);
-          text-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
+          border: 1px solid var(--success);
         }
         
-        .absent {
+        .status-absent {
+          background: rgba(231, 76, 60, 0.2);
           color: var(--accent);
-          text-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+          border: 1px solid var(--accent);
         }
         
         .search-box {
@@ -903,8 +974,7 @@
                         <thead>
                             <tr>
                                 <th>اسم الطالب</th>
-                                <th>الحضور</th>
-                                <th>الغياب</th>
+                                <th>الحالة</th>
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
@@ -967,617 +1037,76 @@
         </section>
     </div>
 
-   <script>
-    // تهيئة Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyDybTBfYneOc5L9Y3suhoFKPdzG--R3oEQ",
-        authDomain: "madrasa-4bac5.firebaseapp.com",
-        projectId: "madrasa-4bac5",
-        storageBucket: "madrasa-4bac5.firebasestorage.app",
-        messagingSenderId: "28185742893",
-        appId: "1:28185742893:web:0cb0bdcc95800886d6f2a4",
-        measurementId: "G-P45TRHB625"
-    };
-
-    // تهيئة Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    let students = [];
-    let weeks = [];
-    let attendance = {};
-
-    // -------------------------
-    // 📌 1) إدارة التحميل المحسنة
-    // -------------------------
-    function showLoading(loadingId) {
-        document.getElementById(loadingId).style.display = 'flex';
-    }
-
-    function hideLoading(loadingId) {
-        document.getElementById(loadingId).style.display = 'none';
-    }
-
-    function showTable(tableContainerId) {
-        document.getElementById(tableContainerId).style.display = 'block';
-    }
-
-    function hideTable(tableContainerId) {
-        document.getElementById(tableContainerId).style.display = 'none';
-    }
-
-    function showButtonLoading(buttonId, loadingId, textId) {
-        document.getElementById(loadingId).style.display = 'inline-block';
-        document.getElementById(textId).style.display = 'none';
-        document.getElementById(buttonId).disabled = true;
-    }
-
-    function hideButtonLoading(buttonId, loadingId, textId) {
-        document.getElementById(loadingId).style.display = 'none';
-        document.getElementById(textId).style.display = 'inline';
-        document.getElementById(buttonId).disabled = false;
-    }
-
-    // إخفاء شاشة التحميل الرئيسية بعد تحميل البيانات
-    function hideMainLoading() {
-        document.getElementById('loadingOverlay').style.display = 'none';
-    }
-
-    // -------------------------
-    // 📌 2) إدارة الطلاب في Firebase
-    // -------------------------
-    async function fetchStudents() {
-        showLoading('studentsLoading');
-        hideTable('studentsTableContainer');
-        
-        try {
-            const snapshot = await db.collection('students').orderBy('createdAt', 'desc').get();
-            students = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            renderStudentsList();
-            hideLoading('studentsLoading');
-            showTable('studentsTableContainer');
-        } catch (error) {
-            console.error("Error fetching students:", error);
-            hideLoading('studentsLoading');
-            alert("حدث خطأ في جلب بيانات الطلاب");
-        }
-    }
-
-    async function addStudent(student) {
-        showButtonLoading('addStudentBtn', 'addStudentLoading', 'addStudentText');
-        
-        try {
-            const docRef = await db.collection('students').add({
-                ...student,
-                createdAt: new Date().toISOString()
-            });
-            alert("تم إضافة الطالب بنجاح");
-            fetchStudents();
-        } catch (error) {
-            console.error("Error adding student:", error);
-            alert("حدث خطأ أثناء إضافة الطالب");
-        } finally {
-            hideButtonLoading('addStudentBtn', 'addStudentLoading', 'addStudentText');
-        }
-    }
-
-    async function deleteStudent(id) {
-        if (confirm("هل أنت متأكد من حذف هذا الطالب؟")) {
-            try {
-                await db.collection('students').doc(id).delete();
-                alert("تم حذف الطالب بنجاح");
-                fetchStudents();
-            } catch (error) {
-                console.error("Error deleting student:", error);
-                alert("حدث خطأ أثناء حذف الطالب");
-            }
-        }
-    }
-
-    // -------------------------
-    // 📌 3) إدارة الأسابيع في Firebase
-    // -------------------------
-    async function fetchWeeks() {
-        showLoading('weeksLoading');
-        hideTable('weeksTableContainer');
-        
-        try {
-            const snapshot = await db.collection('weeks').orderBy('createdAt', 'desc').get();
-            weeks = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            renderWeeksList();
-            updateWeekSelect();
-            updateReportWeekSelect();
-            hideLoading('weeksLoading');
-            showTable('weeksTableContainer');
-        } catch (error) {
-            console.error("Error fetching weeks:", error);
-            hideLoading('weeksLoading');
-            alert("حدث خطأ في جلب بيانات الأسابيع");
-        }
-    }
-
-    async function addWeek(week) {
-        showButtonLoading('addWeekBtn', 'addWeekLoading', 'addWeekText');
-        
-        try {
-            const docRef = await db.collection('weeks').add({
-                ...week,
-                createdAt: new Date().toISOString()
-            });
-            alert("تم إضافة الأسبوع بنجاح");
-            fetchWeeks();
-        } catch (error) {
-            console.error("Error adding week:", error);
-            alert("حدث خطأ أثناء إضافة الأسبوع");
-        } finally {
-            hideButtonLoading('addWeekBtn', 'addWeekLoading', 'addWeekText');
-        }
-    }
-
-    async function deleteWeek(id) {
-        if (confirm("هل أنت متأكد من حذف هذا الأسبوع؟")) {
-            try {
-                await db.collection('weeks').doc(id).delete();
-                alert("تم حذف الأسبوع بنجاح");
-                fetchWeeks();
-            } catch (error) {
-                console.error("Error deleting week:", error);
-                alert("حدث خطأ أثناء حذف الأسبوع");
-            }
-        }
-    }
-
-    // -------------------------
-    // 📌 4) إدارة الحضور والغياب في Firebase
-    // -------------------------
-    async function fetchAttendance() {
-        try {
-            const snapshot = await db.collection('attendance').get();
-            attendance = {};
-            snapshot.docs.forEach(doc => {
-                const data = doc.data();
-                if (!attendance[data.weekId]) attendance[data.weekId] = {};
-                attendance[data.weekId][data.studentId] = data.status;
-            });
-        } catch (error) {
-            console.error("Error fetching attendance:", error);
-            alert("حدث خطأ في جلب بيانات الحضور");
-        }
-    }
-
-    async function saveAttendance(weekId, studentId, status) {
-        try {
-            // البحث عن سجل حضور موجود لهذا الطالب في هذا الأسبوع
-            const existingRecord = await db.collection('attendance')
-                .where('weekId', '==', weekId)
-                .where('studentId', '==', studentId)
-                .get();
-            
-            if (!existingRecord.empty) {
-                // تحديث السجل الموجود
-                const docId = existingRecord.docs[0].id;
-                await db.collection('attendance').doc(docId).update({
-                    status: status,
-                    date: new Date().toISOString().split("T")[0]
-                });
-            } else {
-                // إنشاء سجل جديد
-                await db.collection('attendance').add({
-                    weekId: weekId,
-                    studentId: studentId,
-                    status: status,
-                    date: new Date().toISOString().split("T")[0]
-                });
-            }
-        } catch (error) {
-            console.error("Error saving attendance:", error);
-            throw error;
-        }
-    }
-
-    // -------------------------
-    // 📌 5) عرض البيانات في الواجهة
-    // -------------------------
-    function renderStudentsList() {
-        const tbody = document.getElementById('studentsTableBody');
-        tbody.innerHTML = '';
-        
-        students.forEach(student => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${student.name}</td>
-                <td>${student.guardianName}</td>
-                <td>${student.studentPhone || '-'}</td>
-                <td>${student.fatherPhone}</td>
-                <td>${student.motherPhone}</td>
-                <td class="action-buttons">
-                    <button class="btn btn-warning" onclick="editStudent('${student.id}')">تعديل</button>
-                    <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function renderWeeksList() {
-        const tbody = document.getElementById('weeksTableBody');
-        tbody.innerHTML = '';
-        
-        weeks.forEach(week => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${week.name}</td>
-                <td>${week.date}</td>
-                <td>${students.length}</td>
-                <td class="action-buttons">
-                    <button class="btn btn-danger" onclick="deleteWeek('${week.id}')">حذف</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function updateWeekSelect() {
-        const weekSelect = document.getElementById('weekSelect');
-        weekSelect.innerHTML = '<option value="">-- اختر أسبوع --</option>';
-        
-        weeks.forEach(week => {
-            const option = document.createElement('option');
-            option.value = week.id;
-            option.textContent = week.name;
-            weekSelect.appendChild(option);
-        });
-    }
-
-    function updateReportWeekSelect() {
-        const reportWeekSelect = document.getElementById('reportWeekSelect');
-        reportWeekSelect.innerHTML = '<option value="">-- اختر أسبوع --</option>';
-        
-        weeks.forEach(week => {
-            const option = document.createElement('option');
-            option.value = week.id;
-            option.textContent = week.name;
-            reportWeekSelect.appendChild(option);
-        });
-    }
-
-    // -------------------------
-    // 📌 6) البحث والاقتراحات
-    // -------------------------
-    function showSearchSuggestions(query) {
-        const suggestionsContainer = document.getElementById('searchSuggestions');
-        suggestionsContainer.innerHTML = '';
-        
-        if (query.length < 1) {
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
-        
-        const filteredStudents = students.filter(student => 
-            student.name.toLowerCase().includes(query.toLowerCase()) || 
-            student.guardianName.toLowerCase().includes(query.toLowerCase())
-        );
-        
-        if (filteredStudents.length === 0) {
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
-        
-        filteredStudents.slice(0, 5).forEach(student => {
-            const suggestion = document.createElement('div');
-            suggestion.className = 'search-suggestion';
-            suggestion.textContent = `${student.name} - ${student.guardianName}`;
-            suggestion.onclick = () => {
-                document.getElementById('searchInput').value = student.name;
-                suggestionsContainer.style.display = 'none';
-                performSearch(student.name);
-            };
-            suggestionsContainer.appendChild(suggestion);
-        });
-        
-        suggestionsContainer.style.display = 'block';
-    }
-
-    function performSearch(query) {
-        showLoading('searchLoading');
-        
-        setTimeout(() => {
-            const results = students.filter(student => 
-                student.name.toLowerCase().includes(query.toLowerCase()) || 
-                student.guardianName.toLowerCase().includes(query.toLowerCase())
-            );
-            
-            displaySearchResults(results);
-            hideLoading('searchLoading');
-        }, 500);
-    }
-
-    function displaySearchResults(results) {
-        const container = document.getElementById('searchResults');
-        
-        if (results.length === 0) {
-            container.innerHTML = '<div class="alert">لم يتم العثور على نتائج</div>';
-            return;
-        }
-        
-        let html = '<div class="cards-container">';
-        results.forEach(student => {
-            // حساب عدد مرات الغياب
-            let absentCount = 0;
-            for (const weekId in attendance) {
-                if (attendance[weekId][student.id] === 'absent') absentCount++;
-            }
-            
-            html += `
-                <div class="card glass-card">
-                    <h3 class="card-title">${student.name}</h3>
-                    <div class="card-detail"><strong>ولي الأمر:</strong> ${student.guardianName}</div>
-                    <div class="card-detail"><strong>هاتف الطالب:</strong> ${student.studentPhone || 'N/A'}</div>
-                    <div class="card-detail"><strong>هاتف الأب:</strong> ${student.fatherPhone}</div>
-                    <div class="card-detail"><strong>هاتف الأم:</strong> ${student.motherPhone}</div>
-                    <div class="card-detail"><strong>عدد مرات الغياب:</strong> ${absentCount}</div>
-                </div>
-            `;
-        });
-        html += "</div>";
-        container.innerHTML = html;
-    }
-
-    // -------------------------
-    // 📌 7) التقارير المحسنة
-    // -------------------------
-    function displayAttendanceReport(weekId) {
-        showLoading('reportLoading');
-        
-        setTimeout(() => {
-            const week = weeks.find(w => w.id === weekId);
-            if (!week) {
-                hideLoading('reportLoading');
-                return;
-            }
-            
-            const weekAttendance = attendance[weekId] || {};
-            let presentCount = 0, absentCount = 0;
-            
-            for (const studentId in weekAttendance) {
-                if (weekAttendance[studentId] === 'present') presentCount++;
-                else absentCount++;
-            }
-            
-            const attendanceRate = students.length > 0 ? ((presentCount / students.length) * 100).toFixed(1) : 0;
-            
-            let html = `
-                <div class="stats-cards">
-                    <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
-                        <div class="stat-number">${presentCount}</div>
-                        <div class="stat-label">الحاضرون</div>
-                    </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                        <div class="stat-number">${absentCount}</div>
-                        <div class="stat-label">الغائبون</div>
-                    </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
-                        <div class="stat-number">${attendanceRate}%</div>
-                        <div class="stat-label">نسبة الحضور</div>
-                    </div>
-                </div>
-                
-                <h3 style="margin: 25px 0 15px;">تقرير: ${week.name}</h3>
-                <div class="card glass-card">
-                    <div class="card-detail"><strong>التاريخ:</strong> ${week.date}</div>
-                    <div class="card-detail"><strong>إجمالي الطلاب:</strong> ${students.length}</div>
-                    <div class="card-detail"><strong>الحاضرون:</strong> ${presentCount}</div>
-                    <div class="card-detail"><strong>الغائبون:</strong> ${absentCount}</div>
-                    <div class="card-detail"><strong>نسبة الحضور:</strong> ${attendanceRate}%</div>
-                </div>
-                <h3 style="margin: 25px 0 15px;">التفاصيل</h3>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>الاسم</th><th>الحالة</th></tr></thead>
-                        <tbody>
-            `;
-            
-            students.forEach(student => {
-                const status = weekAttendance[student.id] === 'absent' ? 'غائب' : 'حاضر';
-                const statusClass = weekAttendance[student.id] === 'absent' ? 'absent' : 'present';
-                html += `
-                    <tr>
-                        <td>${student.name}</td>
-                        <td class="${statusClass}">${status}</td>
-                    </tr>
-                `;
-            });
-            
-            html += "</tbody></table></div>";
-            document.getElementById('reportResults').innerHTML = html;
-            hideLoading('reportLoading');
-        }, 800);
-    }
-
-    // -------------------------
-    // 📌 8) معالجة الأحداث والنماذج
-    // -------------------------
-    document.getElementById('studentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const student = {
-            name: document.getElementById('studentName').value,
-            guardianName: document.getElementById('guardianName').value,
-            studentPhone: document.getElementById('studentPhone').value,
-            fatherPhone: document.getElementById('fatherPhone').value,
-            motherPhone: document.getElementById('motherPhone').value
+    <script>
+        // تهيئة Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDybTBfYneOc5L9Y3suhoFKPdzG--R3oEQ",
+            authDomain: "madrasa-4bac5.firebaseapp.com",
+            projectId: "madrasa-4bac5",
+            storageBucket: "madrasa-4bac5.firebasestorage.app",
+            messagingSenderId: "28185742893",
+            appId: "1:28185742893:web:0cb0bdcc95800886d6f2a4",
+            measurementId: "G-P45TRHB625"
         };
-        
-        addStudent(student);
-        this.reset();
-    });
-
-    document.getElementById('weekForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const week = {
-            name: document.getElementById('weekName').value,
-            date: document.getElementById('weekDate').value
-        };
-        
-        addWeek(week);
-        this.reset();
-    });
-
-    document.getElementById('weekSelect').addEventListener('change', function() {
-        const weekId = this.value;
-        
-        if (weekId) {
-            showLoading('attendanceLoading');
-            hideTable('attendanceTableContainer');
-            
+    
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    
+        let students = [];
+        let weeks = [];
+        let attendance = {};
+    
+        // -------------------------
+        // 📌 1) إدارة التحميل المحسنة
+        // -------------------------
+        function showLoading(loadingId) {
+            document.getElementById(loadingId).style.display = 'flex';
+        }
+    
+        function hideLoading(loadingId) {
+            document.getElementById(loadingId).style.display = 'none';
+        }
+    
+        function showTable(tableContainerId) {
+            document.getElementById(tableContainerId).style.display = 'block';
+        }
+    
+        function hideTable(tableContainerId) {
+            document.getElementById(tableContainerId).style.display = 'none';
+        }
+    
+        function showButtonLoading(buttonId, textId, loadingId) {
+            document.getElementById(textId).style.display = 'none';
+            document.getElementById(loadingId).style.display = 'inline-block';
+            document.getElementById(buttonId).disabled = true;
+        }
+    
+        function hideButtonLoading(buttonId, textId, loadingId) {
+            document.getElementById(textId).style.display = 'inline';
+            document.getElementById(loadingId).style.display = 'none';
+            document.getElementById(buttonId).disabled = false;
+        }
+    
+        // إخفاء شاشة التحميل الرئيسية بعد تحميل الصفحة
+        window.addEventListener('load', function() {
             setTimeout(() => {
-                renderAttendanceTable(weekId);
-                hideLoading('attendanceLoading');
-                showTable('attendanceTableContainer');
-            }, 500);
-        } else {
-            hideTable('attendanceTableContainer');
-        }
-    });
-
-    document.getElementById('saveAttendance').addEventListener('click', async function() {
-        const weekId = document.getElementById('weekSelect').value;
-        
-        if (!weekId) {
-            alert("يرجى اختيار أسبوع أولاً");
-            return;
-        }
-        
-        showButtonLoading('saveAttendance', 'saveAttendanceLoading', 'saveAttendanceText');
-        
-        try {
-            // جمع بيانات الحضور وحفظها
-            const checkboxes = document.querySelectorAll('input[name="attendance"]:checked');
-            const attendanceData = {};
-            
-            students.forEach(student => {
-                attendanceData[student.id] = 'absent'; // الافتراضي غياب
-            });
-            
-            checkboxes.forEach(checkbox => {
-                attendanceData[checkbox.value] = 'present';
-            });
-            
-            // حفظ البيانات في Firebase
-            const savePromises = [];
-            for (const studentId in attendanceData) {
-                savePromises.push(saveAttendance(weekId, studentId, attendanceData[studentId]));
-            }
-            
-            await Promise.all(savePromises);
-            alert("تم حفظ بيانات الحضور بنجاح");
-            fetchAttendance();
-        } catch (error) {
-            console.error("Error saving attendance:", error);
-            alert("حدث خطأ أثناء حفظ بيانات الحضور");
-        } finally {
-            hideButtonLoading('saveAttendance', 'saveAttendanceLoading', 'saveAttendanceText');
-        }
-    });
-
-    // أحداث البحث
-    document.getElementById('searchInput').addEventListener('input', function() {
-        showSearchSuggestions(this.value);
-    });
-
-    document.getElementById('searchButton').addEventListener('click', function() {
-        const query = document.getElementById('searchInput').value;
-        if (query.trim()) {
-            showButtonLoading('searchButton', 'searchButtonLoading', 'searchButtonText');
-            performSearch(query);
-            setTimeout(() => {
-                hideButtonLoading('searchButton', 'searchButtonLoading', 'searchButtonText');
-            }, 600);
-        }
-    });
-
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            const query = this.value;
-            if (query.trim()) {
-                showButtonLoading('searchButton', 'searchButtonLoading', 'searchButtonText');
-                performSearch(query);
-                setTimeout(() => {
-                    hideButtonLoading('searchButton', 'searchButtonLoading', 'searchButtonText');
-                }, 600);
-            }
-        }
-    });
-
-    // إغلاق الاقتراحات عند النقر خارجها
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.search-container')) {
-            document.getElementById('searchSuggestions').style.display = 'none';
-        }
-    });
-
-    // حدث التقارير
-    document.getElementById('reportWeekSelect').addEventListener('change', function() {
-        const weekId = this.value;
-        if (weekId) {
-            displayAttendanceReport(weekId);
-        } else {
-            document.getElementById('reportResults').innerHTML = '';
-        }
-    });
-
-    // -------------------------
-    // 📌 9) وظائف إضافية
-    // -------------------------
-    function renderAttendanceTable(weekId) {
-        const tbody = document.getElementById('attendanceTableBody');
-        tbody.innerHTML = '';
-        
-        students.forEach(student => {
-            const isPresent = attendance[weekId] && attendance[weekId][student.id] === 'present';
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${student.name}</td>
-                <td class="attendance-check">
-                    <input type="radio" name="attendance-${student.id}" value="present" ${isPresent ? 'checked' : ''}>
-                </td>
-                <td class="attendance-check">
-                    <input type="radio" name="attendance-${student.id}" value="absent" ${!isPresent ? 'checked' : ''}>
-                </td>
-            `;
-            tbody.appendChild(tr);
+                hideLoading('loadingOverlay');
+                loadStudents();
+                loadWeeks();
+            }, 1500);
         });
-    }
-
-    // -------------------------
-    // 📌 10) تهيئة التطبيق
-    // -------------------------
-    document.addEventListener('DOMContentLoaded', async function() {
-        // تحميل البيانات الأولية
-        await Promise.all([
-            fetchStudents(),
-            fetchWeeks(),
-            fetchAttendance()
-        ]);
-        
-        // إخفاء شاشة التحميل الرئيسية
-        hideMainLoading();
-        
-        // إعداد التنقل بين الأقسام
+    
+        // -------------------------
+        // 📌 2) التنقل بين الأقسام
+        // -------------------------
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 
                 // إزالة النشاط من جميع الروابط
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                
                 // إضافة النشاط للرابط الحالي
                 this.classList.add('active');
                 
@@ -1589,9 +1118,539 @@
                 // إظهار القسم المطلوب
                 const sectionId = this.getAttribute('data-section');
                 document.getElementById(sectionId).classList.add('active');
+                
+                // تحميل البيانات الخاصة بالقسم إذا لزم الأمر
+                if (sectionId === 'attendance') {
+                    populateWeekSelect();
+                } else if (sectionId === 'reports') {
+                    populateReportWeekSelect();
+                }
             });
         });
-    });
-</script>
+    
+        // -------------------------
+        // 📌 3) إدارة الطلاب
+        // -------------------------
+        // إضافة طالب جديد
+        document.getElementById('studentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const studentName = document.getElementById('studentName').value;
+            const guardianName = document.getElementById('guardianName').value;
+            const studentPhone = document.getElementById('studentPhone').value;
+            const fatherPhone = document.getElementById('fatherPhone').value;
+            const motherPhone = document.getElementById('motherPhone').value;
+            
+            showButtonLoading('addStudentBtn', 'addStudentText', 'addStudentLoading');
+            
+            db.collection('students').add({
+                name: studentName,
+                guardian: guardianName,
+                studentPhone: studentPhone,
+                fatherPhone: fatherPhone,
+                motherPhone: motherPhone,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert('تم إضافة الطالب بنجاح!');
+                document.getElementById('studentForm').reset();
+                loadStudents();
+            })
+            .catch(error => {
+                console.error('خطأ في إضافة الطالب:', error);
+                alert('حدث خطأ أثناء إضافة الطالب. يرجى المحاولة مرة أخرى.');
+            })
+            .finally(() => {
+                hideButtonLoading('addStudentBtn', 'addStudentText', 'addStudentLoading');
+            });
+        });
+    
+        // تحميل قائمة الطلاب
+        function loadStudents() {
+            showLoading('studentsLoading');
+            hideTable('studentsTableContainer');
+            
+            db.collection('students').orderBy('createdAt', 'desc').get()
+            .then(querySnapshot => {
+                students = [];
+                const tableBody = document.getElementById('studentsTableBody');
+                tableBody.innerHTML = '';
+                
+                querySnapshot.forEach(doc => {
+                    const student = { id: doc.id, ...doc.data() };
+                    students.push(student);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${student.name}</td>
+                        <td>${student.guardian}</td>
+                        <td>${student.studentPhone || 'غير متوفر'}</td>
+                        <td>${student.fatherPhone}</td>
+                        <td>${student.motherPhone}</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                hideLoading('studentsLoading');
+                showTable('studentsTableContainer');
+            })
+            .catch(error => {
+                console.error('خطأ في تحميل الطلاب:', error);
+                hideLoading('studentsLoading');
+                alert('حدث خطأ أثناء تحميل بيانات الطلاب.');
+            });
+        }
+    
+        // حذف طالب
+        function deleteStudent(studentId) {
+            if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
+                db.collection('students').doc(studentId).delete()
+                .then(() => {
+                    alert('تم حذف الطالب بنجاح!');
+                    loadStudents();
+                })
+                .catch(error => {
+                    console.error('خطأ في حذف الطالب:', error);
+                    alert('حدث خطأ أثناء حذف الطالب.');
+                });
+            }
+        }
+    
+        // -------------------------
+        // 📌 4) إدارة الأسابيع
+        // -------------------------
+        // إضافة أسبوع جديد
+        document.getElementById('weekForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const weekName = document.getElementById('weekName').value;
+            const weekDate = document.getElementById('weekDate').value;
+            
+            showButtonLoading('addWeekBtn', 'addWeekText', 'addWeekLoading');
+            
+            db.collection('weeks').add({
+                name: weekName,
+                date: weekDate,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert('تم إضافة الأسبوع بنجاح!');
+                document.getElementById('weekForm').reset();
+                loadWeeks();
+            })
+            .catch(error => {
+                console.error('خطأ في إضافة الأسبوع:', error);
+                alert('حدث خطأ أثناء إضافة الأسبوع. يرجى المحاولة مرة أخرى.');
+            })
+            .finally(() => {
+                hideButtonLoading('addWeekBtn', 'addWeekText', 'addWeekLoading');
+            });
+        });
+    
+        // تحميل قائمة الأسابيع
+        function loadWeeks() {
+            showLoading('weeksLoading');
+            hideTable('weeksTableContainer');
+            
+            db.collection('weeks').orderBy('createdAt', 'desc').get()
+            .then(querySnapshot => {
+                weeks = [];
+                const tableBody = document.getElementById('weeksTableBody');
+                tableBody.innerHTML = '';
+                
+                querySnapshot.forEach(doc => {
+                    const week = { id: doc.id, ...doc.data() };
+                    weeks.push(week);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${week.name}</td>
+                        <td>${week.date}</td>
+                        <td>0</td>
+                        <td class="action-buttons">
+                            <button class="btn btn-danger" onclick="deleteWeek('${week.id}')">حذف</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                hideLoading('weeksLoading');
+                showTable('weeksTableContainer');
+            })
+            .catch(error => {
+                console.error('خطأ في تحميل الأسابيع:', error);
+                hideLoading('weeksLoading');
+                alert('حدث خطأ أثناء تحميل بيانات الأسابيع.');
+            });
+        }
+    
+        // حذف أسبوع
+        function deleteWeek(weekId) {
+            if (confirm('هل أنت متأكد من حذف هذا الأسبوع؟')) {
+                db.collection('weeks').doc(weekId).delete()
+                .then(() => {
+                    alert('تم حذف الأسبوع بنجاح!');
+                    loadWeeks();
+                })
+                .catch(error => {
+                    console.error('خطأ في حذف الأسبوع:', error);
+                    alert('حدث خطأ أثناء حذف الأسبوع.');
+                });
+            }
+        }
+    
+        // -------------------------
+        // 📌 5) تسجيل الغياب
+        // -------------------------
+        // تعبئة قائمة الأسابيع في قسم تسجيل الغياب
+        function populateWeekSelect() {
+            const weekSelect = document.getElementById('weekSelect');
+            weekSelect.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+            
+            weeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.id;
+                option.textContent = week.name;
+                weekSelect.appendChild(option);
+            });
+        }
+    
+        // عند اختيار أسبوع في قسم تسجيل الغياب
+        document.getElementById('weekSelect').addEventListener('change', function() {
+            const weekId = this.value;
+            
+            if (weekId) {
+                loadAttendanceForWeek(weekId);
+            } else {
+                hideTable('attendanceTableContainer');
+            }
+        });
+    
+        // تحميل بيانات الحضور للأسبوع المحدد
+        function loadAttendanceForWeek(weekId) {
+            showLoading('attendanceLoading');
+            hideTable('attendanceTableContainer');
+            
+            // تحميل الطلاب
+            db.collection('students').get()
+            .then(studentsSnapshot => {
+                const tableBody = document.getElementById('attendanceTableBody');
+                tableBody.innerHTML = '';
+                
+                // تحميل بيانات الحضور لهذا الأسبوع
+                db.collection('attendance').where('weekId', '==', weekId).get()
+                .then(attendanceSnapshot => {
+                    const attendanceData = {};
+                    
+                    attendanceSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        attendanceData[data.studentId] = data.present;
+                    });
+                    
+                    // إنشاء جدول الحضور
+                    studentsSnapshot.forEach(doc => {
+                        const student = { id: doc.id, ...doc.data() };
+                        const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${student.name}</td>
+                            <td class="attendance-toggle">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${isPresent ? 'checked' : ''} onchange="toggleAttendance('${student.id}', '${weekId}', this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
+                                    ${isPresent ? 'حاضر' : 'غائب'}
+                                </span>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    hideLoading('attendanceLoading');
+                    showTable('attendanceTableContainer');
+                })
+                .catch(error => {
+                    console.error('خطأ في تحميل بيانات الحضور:', error);
+                    hideLoading('attendanceLoading');
+                    alert('حدث خطأ أثناء تحميل بيانات الحضور.');
+                });
+            })
+            .catch(error => {
+                console.error('خطأ في تحميل الطلاب:', error);
+                hideLoading('attendanceLoading');
+                alert('حدث خطأ أثناء تحميل بيانات الطلاب.');
+            });
+        }
+    
+        // تبديل حالة الحضور
+        function toggleAttendance(studentId, weekId, isPresent) {
+            // تحديث واجهة المستخدم فورًا
+            const statusElement = document.querySelector(`input[onchange="toggleAttendance('${studentId}', '${weekId}', this.checked)"]`).closest('td').querySelector('.attendance-status');
+            statusElement.textContent = isPresent ? 'حاضر' : 'غائب';
+            statusElement.className = `attendance-status ${isPresent ? 'status-present' : 'status-absent'}`;
+            
+            // حفظ البيانات في Firebase
+            db.collection('attendance').where('studentId', '==', studentId).where('weekId', '==', weekId).get()
+            .then(querySnapshot => {
+                if (!querySnapshot.empty) {
+                    // تحديث السجل الموجود
+                    querySnapshot.forEach(doc => {
+                        db.collection('attendance').doc(doc.id).update({
+                            present: isPresent,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+                } else {
+                    // إنشاء سجل جديد
+                    db.collection('attendance').add({
+                        studentId: studentId,
+                        weekId: weekId,
+                        present: isPresent,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('خطأ في تحديث الحضور:', error);
+                alert('حدث خطأ أثناء تحديث حالة الحضور.');
+            });
+        }
+    
+        // حفظ تسجيل الحضور
+        document.getElementById('saveAttendance').addEventListener('click', function() {
+            showButtonLoading('saveAttendance', 'saveAttendanceText', 'saveAttendanceLoading');
+            
+            // إظهار رسالة نجاح بعد حفظ البيانات
+            setTimeout(() => {
+                hideButtonLoading('saveAttendance', 'saveAttendanceText', 'saveAttendanceLoading');
+                alert('تم حفظ تسجيلات الحضور بنجاح!');
+            }, 1000);
+        });
+    
+        // -------------------------
+        // 📌 6) البحث عن طالب
+        // -------------------------
+        document.getElementById('searchButton').addEventListener('click', function() {
+            performSearch();
+        });
+    
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            if (query.length > 0) {
+                showSearchSuggestions(query);
+            } else {
+                hideSearchSuggestions();
+            }
+        });
+    
+        function showSearchSuggestions(query) {
+            const suggestionsContainer = document.getElementById('searchSuggestions');
+            suggestionsContainer.innerHTML = '';
+            
+            const filteredStudents = students.filter(student => 
+                student.name.includes(query) || student.guardian.includes(query)
+            );
+            
+            if (filteredStudents.length > 0) {
+                filteredStudents.forEach(student => {
+                    const suggestion = document.createElement('div');
+                    suggestion.className = 'search-suggestion';
+                    suggestion.textContent = `${student.name} - ${student.guardian}`;
+                    suggestion.addEventListener('click', function() {
+                        document.getElementById('searchInput').value = student.name;
+                        hideSearchSuggestions();
+                        performSearch();
+                    });
+                    suggestionsContainer.appendChild(suggestion);
+                });
+                
+                suggestionsContainer.style.display = 'block';
+            } else {
+                hideSearchSuggestions();
+            }
+        }
+    
+        function hideSearchSuggestions() {
+            document.getElementById('searchSuggestions').style.display = 'none';
+        }
+    
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            
+            if (query.length === 0) {
+                alert('يرجى إدخال نص للبحث');
+                return;
+            }
+            
+            showLoading('searchLoading');
+            document.getElementById('searchResults').innerHTML = '';
+            
+            // البحث في الطلاب
+            const filteredStudents = students.filter(student => 
+                student.name.includes(query) || student.guardian.includes(query)
+            );
+            
+            hideLoading('searchLoading');
+            
+            if (filteredStudents.length > 0) {
+                let resultsHTML = '<h3>نتائج البحث:</h3><div class="cards-container">';
+                
+                filteredStudents.forEach(student => {
+                    resultsHTML += `
+                        <div class="card">
+                            <div class="card-title">${student.name}</div>
+                            <div class="card-detail"><strong>ولي الأمر:</strong> ${student.guardian}</div>
+                            <div class="card-detail"><strong>هاتف الطالب:</strong> ${student.studentPhone || 'غير متوفر'}</div>
+                            <div class="card-detail"><strong>هاتف الأب:</strong> ${student.fatherPhone}</div>
+                            <div class="card-detail"><strong>هاتف الأم:</strong> ${student.motherPhone}</div>
+                        </div>
+                    `;
+                });
+                
+                resultsHTML += '</div>';
+                document.getElementById('searchResults').innerHTML = resultsHTML;
+            } else {
+                document.getElementById('searchResults').innerHTML = `
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-circle"></i> لم يتم العثور على نتائج تطابق البحث.
+                    </div>
+                `;
+            }
+        }
+    
+        // -------------------------
+        // 📌 7) التقارير
+        // -------------------------
+        // تعبئة قائمة الأسابيع في قسم التقارير
+        function populateReportWeekSelect() {
+            const weekSelect = document.getElementById('reportWeekSelect');
+            weekSelect.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+            
+            weeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.id;
+                option.textContent = week.name;
+                weekSelect.appendChild(option);
+            });
+        }
+    
+        // عند اختيار أسبوع في قسم التقارير
+        document.getElementById('reportWeekSelect').addEventListener('change', function() {
+            const weekId = this.value;
+            
+            if (weekId) {
+                generateReport(weekId);
+            } else {
+                document.getElementById('reportResults').innerHTML = '';
+            }
+        });
+    
+        // إنشاء تقرير الغياب
+        function generateReport(weekId) {
+            showLoading('reportLoading');
+            
+            // تحميل بيانات الحضور لهذا الأسبوع
+            db.collection('attendance').where('weekId', '==', weekId).get()
+            .then(attendanceSnapshot => {
+                const attendanceData = {};
+                let presentCount = 0;
+                let absentCount = 0;
+                
+                attendanceSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    attendanceData[data.studentId] = data.present;
+                    
+                    if (data.present) {
+                        presentCount++;
+                    } else {
+                        absentCount++;
+                    }
+                });
+                
+                // حساب النسب المئوية
+                const totalCount = presentCount + absentCount;
+                const presentPercentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+                const absentPercentage = totalCount > 0 ? Math.round((absentCount / totalCount) * 100) : 0;
+                
+                // إنشاء التقرير
+                let reportHTML = `
+                    <div class="stats-cards">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                            <div class="stat-number">${presentCount}</div>
+                            <div class="stat-label">عدد الحاضرين</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                            <div class="stat-number">${absentCount}</div>
+                            <div class="stat-label">عدد الغائبين</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                            <div class="stat-number">${presentPercentage}%</div>
+                            <div class="stat-label">نسبة الحضور</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                            <div class="stat-number">${absentPercentage}%</div>
+                            <div class="stat-label">نسبة الغياب</div>
+                        </div>
+                    </div>
+                    
+                    <h3>تفاصيل الغياب</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>اسم الطالب</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                // تحميل أسماء الطلاب
+                db.collection('students').get()
+                .then(studentsSnapshot => {
+                    studentsSnapshot.forEach(doc => {
+                        const student = { id: doc.id, ...doc.data() };
+                        const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
+                        
+                        reportHTML += `
+                            <tr>
+                                <td>${student.name}</td>
+                                <td>
+                                    <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
+                                        ${isPresent ? 'حاضر' : 'غائب'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    reportHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                    `;
+                    
+                    document.getElementById('reportResults').innerHTML = reportHTML;
+                    hideLoading('reportLoading');
+                })
+                .catch(error => {
+                    console.error('خطأ في تحميل الطلاب:', error);
+                    hideLoading('reportLoading');
+                    alert('حدث خطأ أثناء تحميل بيانات الطلاب للتقرير.');
+                });
+            })
+            .catch(error => {
+                console.error('خطأ في تحميل بيانات الحضور:', error);
+                hideLoading('reportLoading');
+                alert('حدث خطأ أثناء تحميل بيانات الحضور للتقرير.');
+            });
+        }
+    </script>
 </body>
 </html>
