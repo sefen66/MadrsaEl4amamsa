@@ -10,6 +10,13 @@
     <!-- إضافة Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <!-- مكتبة توليد أكواد QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- مكتبة مسح أكواد QR عبر الكاميرا -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- مكتبة تصدير بيانات إلى ملفات إكسل -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         /* تحسينات التصميم */
@@ -37,7 +44,7 @@
           --glass-bg: rgba(255, 255, 255, 0.1);
         }
         
-        /* تأثيرات زجاجية محسنة */
+      
         .glass-effect {
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
@@ -54,7 +61,7 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
         
-        /* علامات التحميل محسنة */
+       
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -162,7 +169,7 @@
           100% { background-position: 0% 50%; }
         }
         
-        /* تحسينات البحث */
+        
         .search-container {
             position: relative;
             margin-bottom: 20px;
@@ -198,7 +205,7 @@
             border-bottom: none;
         }
         
-        /* تحسينات الأقسام */
+       
         .section {
             display: none;
             background: var(--bg-card);
@@ -250,7 +257,6 @@
             border-radius: 3px;
         }
         
-        /* تحسينات البطاقات */
         .stats-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -283,7 +289,7 @@
             opacity: 0.9;
         }
         
-        /* تحسينات الجداول */
+      
         .table-container {
             overflow-x: auto;
             border-radius: 15px;
@@ -292,7 +298,7 @@
             background: var(--bg-card);
         }
         
-        /* بقية الأنماط تبقى كما هي مع تحسينات بسيطة */
+       
         * {
           box-sizing: border-box;
           margin: 0;
@@ -526,7 +532,7 @@
           overflow-x: auto;
         }
         
-        /* تصميم جديد لتبديل الحضور والغياب */
+        
         .attendance-toggle {
           display: flex;
           align-items: center;
@@ -807,6 +813,233 @@
         ::-webkit-scrollbar-thumb:hover {
           background: var(--primary);
         }
+
+        /* ---------- معرف الطالب (ID) ---------- */
+        .student-id-badge {
+          display: inline-block;
+          background: rgba(52, 152, 219, 0.15);
+          border: 1px solid var(--primary);
+          color: var(--primary);
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          direction: ltr;
+        }
+
+        .btn-qr {
+          background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .btn-scan {
+          background: linear-gradient(135deg, #16a085, #1abc9c);
+        }
+
+        /* ---------- النوافذ المنبثقة (Modal) ---------- */
+        .modal-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.75);
+          z-index: 5000;
+          justify-content: center;
+          align-items: center;
+          padding: 15px;
+          backdrop-filter: blur(6px);
+        }
+
+        .modal-overlay.active {
+          display: flex;
+          animation: slideInUp 0.3s ease;
+        }
+
+        .modal-box {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          padding: 25px;
+          max-width: 420px;
+          width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+          box-shadow: 0 15px 45px rgba(0,0,0,0.5);
+          position: relative;
+          text-align: center;
+        }
+
+        .modal-close {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          background: rgba(255,255,255,0.08);
+          border: none;
+          color: var(--text);
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: 0.2s;
+        }
+
+        .modal-close:hover {
+          background: var(--accent);
+          transform: rotate(90deg);
+        }
+
+        .modal-box h3 {
+          margin-bottom: 15px;
+          color: var(--text);
+        }
+
+        /* بطاقة الطالب القابلة للطباعة */
+        #idCardPrintArea {
+          background: #ffffff;
+          color: #1a202c;
+          border-radius: 14px;
+          padding: 20px;
+          margin: 0 auto 15px;
+          max-width: 280px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+
+        #idCardPrintArea .card-school-name {
+          font-weight: 700;
+          font-size: 15px;
+          margin-bottom: 10px;
+          color: #2c3e50;
+        }
+
+        #idCardPrintArea .card-student-name {
+          font-weight: 700;
+          font-size: 17px;
+          margin: 10px 0 4px;
+        }
+
+        #idCardPrintArea .card-student-id {
+          font-size: 13px;
+          direction: ltr;
+          color: #3498db;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
+
+        #qrcodeCanvas {
+          display: flex;
+          justify-content: center;
+          margin: 10px auto;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 10px;
+        }
+
+        /* ---------- ماسح الكاميرا ---------- */
+        #qrScannerReader {
+          width: 100%;
+          border-radius: 12px;
+          overflow: hidden;
+          margin-bottom: 15px;
+        }
+
+        .scan-result-box {
+          background: rgba(46, 204, 113, 0.15);
+          border: 1px solid var(--success);
+          border-radius: 10px;
+          padding: 12px;
+          margin-top: 10px;
+          display: none;
+        }
+
+        .scan-result-box.active {
+          display: block;
+          animation: slideInUp 0.3s ease;
+        }
+
+        .scan-hint {
+          font-size: 13px;
+          color: var(--text-light);
+          margin-bottom: 10px;
+        }
+
+        .attendance-toolbar {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: flex-end;
+          margin-bottom: 15px;
+        }
+
+        .attendance-toolbar .form-group {
+          flex: 1;
+          min-width: 220px;
+          margin-bottom: 0;
+        }
+
+        /* ---------- شبكة أكواد QR ---------- */
+        .qr-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 20px;
+        }
+
+        .qr-mini-card {
+          background: #ffffff;
+          color: #1a202c;
+          border-radius: 14px;
+          padding: 18px 14px;
+          text-align: center;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+          transition: transform 0.2s ease;
+        }
+
+        .qr-mini-card:hover {
+          transform: translateY(-4px);
+        }
+
+        .qr-mini-card .card-school-name {
+          font-weight: 700;
+          font-size: 12px;
+          color: #2c3e50;
+          margin-bottom: 8px;
+        }
+
+        .qr-mini-card .qr-mini-canvas {
+          display: flex;
+          justify-content: center;
+          margin: 8px auto;
+        }
+
+        .qr-mini-card .card-student-name {
+          font-weight: 700;
+          font-size: 15px;
+          margin: 8px 0 3px;
+        }
+
+        .qr-mini-card .card-student-id {
+          font-size: 12px;
+          direction: ltr;
+          color: #3498db;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
+
+        .qr-mini-card .btn {
+          padding: 7px 14px;
+          font-size: 13px;
+          margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -837,6 +1070,7 @@
                 <li><a href="#" class="nav-link active" data-section="students">إدارة الطلاب</a></li>
                 <li><a href="#" class="nav-link" data-section="weeks">إدارة الأسابيع</a></li>
                 <li><a href="#" class="nav-link" data-section="attendance">تسجيل الغياب</a></li>
+                <li><a href="#" class="nav-link" data-section="qrcodes">أكواد QR</a></li>
                 <li><a href="#" class="nav-link" data-section="search">البحث عن طالب</a></li>
                 <li><a href="#" class="nav-link" data-section="reports">التقارير</a></li>
             </ul>
@@ -860,19 +1094,17 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="studentPhone">رقم هاتف الطالب (اختياري)</label>
+                    <label for="studentPhone">رقم هاتف الطالب </label>
                     <input type="tel" id="studentPhone">
                 </div>
                 
                 <div class="form-group">
-                    <label for="fatherPhone">رقم هاتف الأب</label>
+                    <label for="fatherPhone">رقم هاتف الاب </label>
                     <input type="tel" id="fatherPhone" required>
                 </div>
+           
                 
-                <div class="form-group">
-                    <label for="motherPhone">رقم هاتف الأم</label>
-                    <input type="tel" id="motherPhone" required>
-                </div>
+
                 
                 <button type="submit" class="btn" id="addStudentBtn">
                     <span id="addStudentText">إضافة الطالب</span>
@@ -890,6 +1122,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>معرف الطالب (ID)</th>
                                 <th>الاسم</th>
                                 <th>ولي الأمر</th>
                                 <th>هاتف الطالب</th>
@@ -905,6 +1138,25 @@
                 </div>
             </div>
         </section>
+
+        <!-- نافذة عرض بطاقة الطالب و QR Code -->
+        <div class="modal-overlay" id="idCardModal">
+            <div class="modal-box">
+                <button class="modal-close" onclick="closeIdCardModal()"><i class="fas fa-times"></i></button>
+                <h3><i class="fas fa-id-card"></i> بطاقة الطالب</h3>
+                <div id="idCardPrintArea">
+                    <div class="card-school-name">مدرسة بي نيشتي ايبسكوبس</div>
+                    <div id="qrcodeCanvas"></div>
+                    <div class="card-student-name" id="idCardStudentName"></div>
+                    <div class="card-student-id" id="idCardStudentId"></div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-success" onclick="printIdCard()">
+                        <i class="fas fa-print"></i> طباعة البطاقة
+                    </button>
+                </div>
+            </div>
+        </div>
         
         <!-- قسم إدارة الأسابيع -->
         <section id="weeks" class="section">
@@ -955,11 +1207,16 @@
         <section id="attendance" class="section">
             <h2 class="section-title">تسجيل الغياب</h2>
             
-            <div class="form-group">
-                <label for="weekSelect">اختر أسبوع للتسجيل:</label>
-                <select id="weekSelect">
-                    <option value="">-- اختر أسبوع --</option>
-                </select>
+            <div class="attendance-toolbar">
+                <div class="form-group">
+                    <label for="weekSelect">اختر أسبوع للتسجيل:</label>
+                    <select id="weekSelect">
+                        <option value="">-- اختر أسبوع --</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-scan" id="openScannerBtn">
+                    <i class="fas fa-qrcode"></i>&nbsp; تسجيل الحضور بمسح QR
+                </button>
             </div>
             
             <div id="attendanceLoading" class="section-loading" style="display: none;">
@@ -988,6 +1245,42 @@
                     <div id="saveAttendanceLoading" class="loading-small" style="display: none;"></div>
                 </button>
             </div>
+        </section>
+
+        <!-- نافذة مسح QR لتسجيل الحضور عبر كاميرا الهاتف -->
+        <div class="modal-overlay" id="scannerModal">
+            <div class="modal-box" style="max-width: 480px;">
+                <button class="modal-close" onclick="closeScannerModal()"><i class="fas fa-times"></i></button>
+                <h3><i class="fas fa-camera"></i> تسجيل حضور بمسح QR</h3>
+                <div class="scan-hint" id="scanHint">وجّه كاميرا الهاتف نحو QR الخاص بالطالب لتسجيل حضوره تلقائيًا.</div>
+                <div id="qrScannerReader"></div>
+                <div class="scan-result-box" id="scanResultBox">
+                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                    <span id="scanResultText"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- قسم إنشاء أكواد QR لكل طالب -->
+        <section id="qrcodes" class="section">
+            <h2 class="section-title">أكواد QR للطلاب</h2>
+
+            <div class="attendance-toolbar">
+                <div class="form-group">
+                    <label for="qrSearchInput">بحث سريع عن طالب:</label>
+                    <input type="text" id="qrSearchInput" placeholder="اكتب اسم الطالب للتصفية...">
+                </div>
+                <button type="button" class="btn btn-success" id="printAllQrBtn">
+                    <i class="fas fa-print"></i>&nbsp; طباعة جميع البطاقات
+                </button>
+            </div>
+
+            <div id="qrCodesLoading" class="section-loading">
+                <div class="section-spinner"></div>
+                <div>جاري تجهيز أكواد QR...</div>
+            </div>
+
+            <div id="qrCodesGrid" class="qr-grid" style="display: none;"></div>
         </section>
         
         <!-- قسم البحث عن طالب -->
@@ -1019,11 +1312,16 @@
         <section id="reports" class="section">
             <h2 class="section-title">تقارير الغياب</h2>
             
-            <div class="form-group">
-                <label for="reportWeekSelect">اختر أسبوع لعرض التقرير:</label>
-                <select id="reportWeekSelect">
-                    <option value="">-- اختر أسبوع --</option>
-                </select>
+            <div class="attendance-toolbar">
+                <div class="form-group">
+                    <label for="reportWeekSelect">اختر أسبوع لعرض التقرير:</label>
+                    <select id="reportWeekSelect">
+                        <option value="">-- اختر أسبوع --</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-success" id="exportExcelBtn" style="display: none;">
+                    <i class="fas fa-file-excel"></i>&nbsp; تصدير إلى إكسل
+                </button>
             </div>
             
             <div id="reportLoading" class="section-loading" style="display: none;">
@@ -1056,6 +1354,17 @@
         let students = [];
         let weeks = [];
         let attendance = {};
+        let html5QrScanner = null; // مثيل ماسح QR
+        let currentAttendanceWeekId = ''; // الأسبوع الحالي المفعّل في شاشة تسجيل الحضور
+
+        // -------------------------
+        // 📌 0) توليد معرف فريد (ID) لكل طالب
+        // -------------------------
+        function generateStudentId() {
+            const timePart = Date.now().toString(36).toUpperCase();
+            const randomPart = Math.floor(1000 + Math.random() * 9000);
+            return `STU-${timePart}-${randomPart}`;
+        }
     // متغيرات لتخزين الحالة
 let currentSelectedWeek = '';
 let currentSelectedReportWeek = '';
@@ -1090,6 +1399,14 @@ let currentSelectedReportWeek = '';
             document.getElementById(buttonId).disabled = false;
         }
     
+        // إغلاق النوافذ المنبثقة عند الضغط خارج محتواها
+        document.getElementById('idCardModal').addEventListener('click', function(e) {
+            if (e.target === this) closeIdCardModal();
+        });
+        document.getElementById('scannerModal').addEventListener('click', function(e) {
+            if (e.target === this) closeScannerModal();
+        });
+
         // إخفاء شاشة التحميل الرئيسية بعد تحميل الصفحة
         window.addEventListener('load', function() {
             setTimeout(() => {
@@ -1126,6 +1443,8 @@ let currentSelectedReportWeek = '';
                     populateWeekSelect();
                 } else if (sectionId === 'reports') {
                     populateReportWeekSelect();
+                } else if (sectionId === 'qrcodes') {
+                    loadQrCodesGrid();
                 }
             });
         });
@@ -1145,7 +1464,11 @@ let currentSelectedReportWeek = '';
             
             showButtonLoading('addStudentBtn', 'addStudentText', 'addStudentLoading');
             
-            db.collection('students').add({
+            // توليد معرف فريد (ID) للطالب ليُستخدم أيضًا كمعرف المستند في Firebase
+            const newStudentId = generateStudentId();
+            
+            db.collection('students').doc(newStudentId).set({
+                studentCode: newStudentId,
                 name: studentName,
                 guardian: guardianName,
                 studentPhone: studentPhone,
@@ -1184,12 +1507,14 @@ let currentSelectedReportWeek = '';
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td><span class="student-id-badge">${student.studentCode || student.id}</span></td>
                         <td>${student.name}</td>
                         <td>${student.guardian}</td>
                         <td>${student.studentPhone || 'غير متوفر'}</td>
                         <td>${student.fatherPhone}</td>
                         <td>${student.motherPhone}</td>
                         <td class="action-buttons">
+                            <button class="btn btn-qr" onclick="showIdCard('${student.id}')"><i class="fas fa-qrcode"></i> QR</button>
                             <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
                         </td>
                     `;
@@ -1220,6 +1545,208 @@ let currentSelectedReportWeek = '';
                 });
             }
         }
+
+        // -------------------------
+        // 📌 3.1) بطاقة الطالب و QR Code
+        // -------------------------
+        // عرض بطاقة الطالب مع QR الخاص به
+        function showIdCard(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            const code = student.studentCode || student.id;
+
+            document.getElementById('idCardStudentName').textContent = student.name;
+            document.getElementById('idCardStudentId').textContent = code;
+
+            const qrContainer = document.getElementById('qrcodeCanvas');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: code,
+                width: 180,
+                height: 180,
+                colorDark: '#1a202c',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('idCardModal').classList.add('active');
+        }
+
+        function closeIdCardModal() {
+            document.getElementById('idCardModal').classList.remove('active');
+        }
+
+        // طباعة بطاقة الطالب
+        function printIdCard() {
+            const cardHTML = document.getElementById('idCardPrintArea').outerHTML;
+            const printWindow = window.open('', '_blank', 'width=400,height=600');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>بطاقة الطالب</title>
+                    <style>
+                        body { font-family: Tajawal, Arial, sans-serif; display:flex; justify-content:center; padding:30px; }
+                        #idCardPrintArea { background:#fff; color:#1a202c; border-radius:14px; padding:20px; max-width:280px; box-shadow:0 6px 20px rgba(0,0,0,0.25); text-align:center; }
+                        .card-school-name { font-weight:700; font-size:15px; margin-bottom:10px; color:#2c3e50; }
+                        .card-student-name { font-weight:700; font-size:17px; margin:10px 0 4px; }
+                        .card-student-id { font-size:13px; direction:ltr; color:#3498db; font-weight:600; margin-bottom:10px; }
+                        #qrcodeCanvas { display:flex; justify-content:center; margin:10px auto; }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    ${cardHTML}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // -------------------------
+        // 📌 3.2) قسم إنشاء أكواد QR لكل طالب (شبكة كاملة)
+        // -------------------------
+        // تحميل/عرض شبكة أكواد QR لجميع الطلاب
+        function loadQrCodesGrid(filterText) {
+            const loadingEl = document.getElementById('qrCodesLoading');
+            const gridEl = document.getElementById('qrCodesGrid');
+
+            loadingEl.style.display = 'flex';
+            gridEl.style.display = 'none';
+
+            // دالة داخلية لبناء الشبكة بعد التأكد من توفر بيانات الطلاب
+            function renderGrid() {
+                const query = (filterText || '').trim();
+                const list = query
+                    ? students.filter(s => s.name.includes(query))
+                    : students;
+
+                gridEl.innerHTML = '';
+
+                if (list.length === 0) {
+                    gridEl.innerHTML = `
+                        <div class="alert alert-error" style="grid-column: 1 / -1;">
+                            <i class="fas fa-exclamation-circle"></i> لا يوجد طلاب لعرضهم.
+                        </div>
+                    `;
+                } else {
+                    list.forEach(student => {
+                        const code = student.studentCode || student.id;
+                        const card = document.createElement('div');
+                        card.className = 'qr-mini-card';
+                        card.id = `qrMiniCard-${student.id}`;
+                        card.innerHTML = `
+                            <div class="card-school-name">مدرسة بي نيشتي ايبسكوبس</div>
+                            <div class="qr-mini-canvas" id="qrMiniCanvas-${student.id}"></div>
+                            <div class="card-student-name">${student.name}</div>
+                            <div class="card-student-id">${code}</div>
+                            <button class="btn btn-success" onclick="printSingleMiniCard('${student.id}')">
+                                <i class="fas fa-print"></i> طباعة
+                            </button>
+                        `;
+                        gridEl.appendChild(card);
+
+                        new QRCode(document.getElementById(`qrMiniCanvas-${student.id}`), {
+                            text: code,
+                            width: 130,
+                            height: 130,
+                            colorDark: '#1a202c',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    });
+                }
+
+                loadingEl.style.display = 'none';
+                gridEl.style.display = 'grid';
+            }
+
+            // إن لم تكن بيانات الطلاب محملة بعد، حمّلها أولاً
+            if (students.length === 0) {
+                db.collection('students').orderBy('createdAt', 'desc').get()
+                .then(querySnapshot => {
+                    students = [];
+                    querySnapshot.forEach(doc => {
+                        students.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderGrid();
+                })
+                .catch(error => {
+                    console.error('خطأ في تحميل الطلاب:', error);
+                    loadingEl.style.display = 'none';
+                    alert('حدث خطأ أثناء تحميل بيانات الطلاب.');
+                });
+            } else {
+                renderGrid();
+            }
+        }
+
+        // بحث/تصفية داخل قسم أكواد QR
+        document.getElementById('qrSearchInput').addEventListener('input', function() {
+            loadQrCodesGrid(this.value);
+        });
+
+        // طباعة بطاقة QR لطالب واحد من داخل الشبكة
+        function printSingleMiniCard(studentId) {
+            const cardEl = document.getElementById(`qrMiniCard-${studentId}`);
+            if (!cardEl) return;
+
+            const printWindow = window.open('', '_blank', 'width=400,height=600');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>بطاقة الطالب</title>
+                    <style>
+                        body { font-family: Tajawal, Arial, sans-serif; display:flex; justify-content:center; padding:30px; }
+                        .qr-mini-card { background:#fff; color:#1a202c; border-radius:14px; padding:20px; max-width:280px; box-shadow:0 6px 20px rgba(0,0,0,0.25); text-align:center; }
+                        .card-school-name { font-weight:700; font-size:13px; margin-bottom:10px; color:#2c3e50; }
+                        .card-student-name { font-weight:700; font-size:17px; margin:10px 0 4px; }
+                        .card-student-id { font-size:13px; direction:ltr; color:#3498db; font-weight:600; margin-bottom:10px; }
+                        .qr-mini-canvas { display:flex; justify-content:center; margin:10px auto; }
+                        button { display:none; }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    ${cardEl.outerHTML}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // طباعة جميع بطاقات QR دفعة واحدة
+        document.getElementById('printAllQrBtn').addEventListener('click', function() {
+            const gridEl = document.getElementById('qrCodesGrid');
+            if (!gridEl || gridEl.children.length === 0) {
+                alert('لا توجد بطاقات لطباعتها.');
+                return;
+            }
+
+            const printWindow = window.open('', '_blank', 'width=800,height=900');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>بطاقات QR لجميع الطلاب</title>
+                    <style>
+                        body { font-family: Tajawal, Arial, sans-serif; padding:20px; }
+                        .qr-print-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:20px; }
+                        .qr-mini-card { background:#fff; color:#1a202c; border-radius:14px; padding:18px 14px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.15); page-break-inside: avoid; }
+                        .card-school-name { font-weight:700; font-size:12px; margin-bottom:8px; color:#2c3e50; }
+                        .card-student-name { font-weight:700; font-size:15px; margin:8px 0 3px; }
+                        .card-student-id { font-size:12px; direction:ltr; color:#3498db; font-weight:600; margin-bottom:10px; }
+                        .qr-mini-canvas { display:flex; justify-content:center; margin:8px auto; }
+                        button { display:none; }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    <div class="qr-print-grid">${gridEl.innerHTML}</div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        });
     
         // -------------------------
         // 📌 4) إدارة الأسابيع
@@ -1323,6 +1850,7 @@ let currentSelectedReportWeek = '';
         // عند اختيار أسبوع في قسم تسجيل الغياب
         document.getElementById('weekSelect').addEventListener('change', function() {
             const weekId = this.value;
+            currentAttendanceWeekId = weekId;
             
             if (weekId) {
                 loadAttendanceForWeek(weekId);
@@ -1392,10 +1920,14 @@ function loadAttendanceForWeek(weekId) {
     
         // تبديل حالة الحضور
         function toggleAttendance(studentId, weekId, isPresent) {
-            // تحديث واجهة المستخدم فورًا
-            const statusElement = document.querySelector(`input[onchange="toggleAttendance('${studentId}', '${weekId}', this.checked)"]`).closest('td').querySelector('.attendance-status');
-            statusElement.textContent = isPresent ? 'حاضر' : 'غائب';
-            statusElement.className = `attendance-status ${isPresent ? 'status-present' : 'status-absent'}`;
+            // تحديث واجهة المستخدم فورًا إن كان الصف ظاهرًا في الجدول
+            const inputEl = document.querySelector(`input[onchange="toggleAttendance('${studentId}', '${weekId}', this.checked)"]`);
+            if (inputEl) {
+                inputEl.checked = isPresent;
+                const statusElement = inputEl.closest('td').querySelector('.attendance-status');
+                statusElement.textContent = isPresent ? 'حاضر' : 'غائب';
+                statusElement.className = `attendance-status ${isPresent ? 'status-present' : 'status-absent'}`;
+            }
             
             // حفظ البيانات في Firebase
             db.collection('attendance').where('studentId', '==', studentId).where('weekId', '==', weekId).get()
@@ -1434,6 +1966,84 @@ function loadAttendanceForWeek(weekId) {
                 alert('تم حفظ تسجيلات الحضور بنجاح!');
             }, 1000);
         });
+
+        // -------------------------
+        // 📌 5.1) تسجيل الحضور عبر مسح QR بكاميرا الهاتف
+        // -------------------------
+        let lastScannedCode = null;
+        let lastScannedTime = 0;
+
+        document.getElementById('openScannerBtn').addEventListener('click', function() {
+            if (!currentAttendanceWeekId) {
+                alert('يرجى اختيار الأسبوع أولاً قبل بدء تسجيل الحضور بالكاميرا.');
+                return;
+            }
+            openScannerModal();
+        });
+
+        function openScannerModal() {
+            lastScannedCode = null;
+            lastScannedTime = 0;
+            document.getElementById('scanResultBox').classList.remove('active');
+            document.getElementById('scannerModal').classList.add('active');
+
+            html5QrScanner = new Html5Qrcode('qrScannerReader');
+            const config = { fps: 10, qrbox: { width: 230, height: 230 } };
+
+            html5QrScanner.start(
+                { facingMode: 'environment' }, // استخدام الكاميرا الخلفية بالهاتف
+                config,
+                onQrScanSuccess,
+                () => { /* يتم تجاهل أخطاء عدم العثور على كود في كل إطار */ }
+            ).catch(err => {
+                console.error('تعذر تشغيل الكاميرا:', err);
+                alert('تعذر تشغيل الكاميرا. يرجى التأكد من منح إذن الوصول للكاميرا من متصفح الهاتف.');
+                closeScannerModal();
+            });
+        }
+
+        function closeScannerModal() {
+            document.getElementById('scannerModal').classList.remove('active');
+            if (html5QrScanner) {
+                html5QrScanner.stop().then(() => {
+                    html5QrScanner.clear();
+                    html5QrScanner = null;
+                }).catch(() => {
+                    html5QrScanner = null;
+                });
+            }
+        }
+
+        // عند نجاح مسح كود QR
+        function onQrScanSuccess(decodedText) {
+            const now = Date.now();
+            // تجاهل تكرار نفس الكود خلال 3 ثوانٍ لتفادي التسجيل المتكرر
+            if (decodedText === lastScannedCode && (now - lastScannedTime) < 3000) {
+                return;
+            }
+            lastScannedCode = decodedText;
+            lastScannedTime = now;
+
+            const student = students.find(s => (s.studentCode || s.id) === decodedText || s.id === decodedText);
+            const resultBox = document.getElementById('scanResultBox');
+            const resultText = document.getElementById('scanResultText');
+
+            if (!student) {
+                resultBox.style.borderColor = 'var(--accent)';
+                resultBox.style.background = 'rgba(231, 76, 60, 0.15)';
+                resultText.textContent = 'كود QR غير معروف، لا يوجد طالب مطابق لهذا المعرف.';
+                resultBox.classList.add('active');
+                return;
+            }
+
+            // تسجيل الطالب كحاضر للأسبوع الحالي
+            toggleAttendance(student.id, currentAttendanceWeekId, true);
+
+            resultBox.style.borderColor = 'var(--success)';
+            resultBox.style.background = 'rgba(46, 204, 113, 0.15)';
+            resultText.textContent = `تم تسجيل حضور الطالب: ${student.name} ✅`;
+            resultBox.classList.add('active');
+        }
     
         // -------------------------
         // 📌 6) البحث عن طالب
@@ -1546,18 +2156,29 @@ function loadAttendanceForWeek(weekId) {
         // عند اختيار أسبوع في قسم التقارير
         document.getElementById('reportWeekSelect').addEventListener('change', function() {
             const weekId = this.value;
+            currentSelectedReportWeek = weekId;
             
             if (weekId) {
                 generateReport(weekId);
             } else {
                 document.getElementById('reportResults').innerHTML = '';
+                document.getElementById('exportExcelBtn').style.display = 'none';
             }
         });
     
+        // بيانات التقرير الحالي (تُستخدم عند التصدير إلى إكسل)
+        let currentReportRows = [];
+        let currentReportSummary = null;
+        let currentReportWeekName = '';
+
         // إنشاء تقرير الغياب
         // إنشاء تقرير الغياب
 function generateReport(weekId) {
     showLoading('reportLoading');
+    document.getElementById('exportExcelBtn').style.display = 'none';
+    
+    const weekObj = weeks.find(w => w.id === weekId);
+    currentReportWeekName = weekObj ? weekObj.name : weekId;
     
     // تحميل بيانات الحضور لهذا الأسبوع
     db.collection('attendance').where('weekId', '==', weekId).get()
@@ -1615,6 +2236,8 @@ function generateReport(weekId) {
                     <tbody>
         `;
         
+        currentReportRows = [];
+        
         // تحميل أسماء الطلاب فقط عند اختيار الأسبوع
         db.collection('students').get()
         .then(studentsSnapshot => {
@@ -1632,6 +2255,16 @@ function generateReport(weekId) {
                         </td>
                     </tr>
                 `;
+
+                // تجميع بيانات الصف لاستخدامها لاحقًا في التصدير لإكسل
+                currentReportRows.push({
+                    'معرف الطالب': student.studentCode || student.id,
+                    'اسم الطالب': student.name,
+                    'ولي الأمر': student.guardian || '',
+                    'هاتف الأب': student.fatherPhone || '',
+                    'هاتف الأم': student.motherPhone || '',
+                    'الحالة': isPresent ? 'حاضر' : 'غائب'
+                });
             });
             
             reportHTML += `
@@ -1640,8 +2273,11 @@ function generateReport(weekId) {
             </div>
             `;
             
+            currentReportSummary = { presentCount, absentCount, presentPercentage, absentPercentage };
+            
             document.getElementById('reportResults').innerHTML = reportHTML;
             hideLoading('reportLoading');
+            document.getElementById('exportExcelBtn').style.display = currentReportRows.length > 0 ? 'inline-flex' : 'none';
         })
         .catch(error => {
             console.error('خطأ في تحميل الطلاب:', error);
@@ -1655,6 +2291,47 @@ function generateReport(weekId) {
         alert('حدث خطأ أثناء تحميل بيانات الحضور للتقرير.');
     });
 }
+
+        // -------------------------
+        // 📌 7.1) تصدير تقرير الغياب الأسبوعي إلى ملف إكسل
+        // -------------------------
+        document.getElementById('exportExcelBtn').addEventListener('click', function() {
+            if (!currentReportRows || currentReportRows.length === 0) {
+                alert('لا توجد بيانات لتصديرها. يرجى اختيار أسبوع أولاً.');
+                return;
+            }
+
+            // ورقة تفاصيل الحضور والغياب
+            const detailsSheet = XLSX.utils.json_to_sheet(currentReportRows);
+            detailsSheet['!cols'] = [
+                { wch: 20 }, // معرف الطالب
+                { wch: 25 }, // اسم الطالب
+                { wch: 20 }, // ولي الأمر
+                { wch: 15 }, // هاتف الأب
+                { wch: 15 }, // هاتف الأم
+                { wch: 10 }  // الحالة
+            ];
+
+            // ورقة ملخص إحصائي
+            const summaryRows = currentReportSummary ? [
+                { 'البيان': 'الأسبوع', 'القيمة': currentReportWeekName },
+                { 'البيان': 'عدد الحاضرين', 'القيمة': currentReportSummary.presentCount },
+                { 'البيان': 'عدد الغائبين', 'القيمة': currentReportSummary.absentCount },
+                { 'البيان': 'نسبة الحضور', 'القيمة': currentReportSummary.presentPercentage + '%' },
+                { 'البيان': 'نسبة الغياب', 'القيمة': currentReportSummary.absentPercentage + '%' }
+            ] : [];
+            const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+            summarySheet['!cols'] = [{ wch: 20 }, { wch: 20 }];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, summarySheet, 'ملخص الأسبوع');
+            XLSX.utils.book_append_sheet(workbook, detailsSheet, 'تفاصيل الحضور');
+
+            const safeWeekName = (currentReportWeekName || 'تقرير').replace(/[\\/:*?"<>|]/g, '-');
+            const fileName = `تقرير_الغياب_${safeWeekName}.xlsx`;
+
+            XLSX.writeFile(workbook, fileName);
+        });
 
     </script>
 </body>
