@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</title>
+    <title>نظام تسجيل الغياب - مدرسة الشمامسة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -1155,7 +1155,7 @@
     <header>
         <div class="container">
             <div class="logo">
-                <h1> خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات </h1>
+                <h1> نظام تسجيل الغياب - مدرسة بي نيشتي ايبسكوبس </h1>
                 <div class="school-logo">
                     <div class="logo-frame">
                       <img src="WhatsApp Image 2025-09-25 at 13.04.33_37954a2f.jpg" alt="School Logo">
@@ -1910,38 +1910,13 @@ let currentSelectedReportWeek = '';
             return cc + digits;
         }
 
-        // توليد صورة QR للطالب ورفعها على Firebase Storage (أو استخدام الرابط المخزن مسبقًا)
-        async function getStudentQrImageUrl(student) {
-            if (student.qrImageUrl) return student.qrImageUrl;
-
+        // توليد رابط صورة QR للطالب (بدون الحاجة لرفعها على Firebase Storage)
+        // ملاحظة: كان الكود يرفع صورة QR على Firebase Storage، لكن قواعد الحماية الافتراضية
+        // تمنع الرفع من تطبيق بدون تسجيل دخول (Authentication)، وهو سبب رسالة الخطأ السابقة.
+        // الحل الأبسط والأضمن: توليد رابط مباشر لصورة QR عبر خدمة عامة، فلا حاجة لأي رفع أو صلاحيات.
+        function getStudentQrImageUrl(student) {
             const code = student.studentCode || student.id;
-            const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'fixed';
-            tempContainer.style.left = '-9999px';
-            document.body.appendChild(tempContainer);
-
-            new QRCode(tempContainer, {
-                text: code,
-                width: 300,
-                height: 300,
-                colorDark: '#1a202c',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            const canvas = tempContainer.querySelector('canvas');
-            const dataUrl = canvas.toDataURL('image/png');
-            document.body.removeChild(tempContainer);
-
-            const blob = await (await fetch(dataUrl)).blob();
-            const storageRef = storage.ref().child(`qrcodes/${student.id}.png`);
-            await storageRef.put(blob);
-            const url = await storageRef.getDownloadURL();
-
-            await db.collection('students').doc(student.id).update({ qrImageUrl: url });
-            student.qrImageUrl = url;
-
-            return url;
+            return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}`;
         }
 
         // بناء نص الرسالة من القالب
