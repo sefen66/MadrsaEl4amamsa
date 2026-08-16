@@ -10,6 +10,7 @@
     <!-- إضافة Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
 
     <!-- مكتبة توليد أكواد QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -17,6 +18,8 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <!-- مكتبة تصدير بيانات إلى ملفات إكسل -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- مكتبة ضغط ملفات متعددة في ملف ZIP واحد -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <style>
         /* تحسينات التصميم */
@@ -376,8 +379,15 @@
           z-index: 1;
         }
         
+        .nav-links li {
+          flex: 1;
+        }
+        
         .nav-links li a {
-          display: block;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
           padding: 15px 20px;
           color: var(--text);
           text-decoration: none;
@@ -386,6 +396,7 @@
           border-bottom: 3px solid transparent;
           position: relative;
           overflow: hidden;
+          white-space: nowrap;
         }
         
         .nav-links li a::before {
@@ -752,10 +763,47 @@
         
         /* التكيف مع الشاشات المختلفة */
         @media (max-width: 768px) {
-          .nav-links {
-            flex-direction: column;
+          nav {
+            position: sticky;
+            top: 0;
+            z-index: 500;
+            border-radius: 0;
           }
-          
+
+          .nav-links {
+            flex-direction: row;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+            justify-content: flex-start;
+            scrollbar-width: none;
+          }
+
+          .nav-links::-webkit-scrollbar {
+            display: none;
+          }
+
+          .nav-links li {
+            flex: 0 0 auto;
+          }
+
+          .nav-links li a {
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px 16px;
+            font-size: 12px;
+            scroll-snap-align: start;
+            border-bottom: 3px solid transparent;
+          }
+
+          .nav-links li a i {
+            font-size: 17px;
+          }
+
+          .nav-links li a.active {
+            background: rgba(52, 152, 219, 0.12);
+          }
+
           .cards-container {
             grid-template-columns: 1fr;
           }
@@ -837,6 +885,38 @@
           background: linear-gradient(135deg, #16a085, #1abc9c);
         }
 
+        .btn-whatsapp {
+          background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+
+        textarea {
+          width: 100%;
+          padding: 12px 15px;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          font-size: 15px;
+          font-family: 'Tajawal', sans-serif;
+          transition: all 0.3s ease;
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--text);
+          backdrop-filter: blur(5px);
+          resize: vertical;
+        }
+
+        textarea:focus {
+          border-color: var(--primary);
+          outline: none;
+          box-shadow: 0 0 0 3px var(--glow);
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .wa-student-checkbox {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+          accent-color: var(--primary);
+        }
+
         /* ---------- النوافذ المنبثقة (Modal) ---------- */
         .modal-overlay {
           display: none;
@@ -900,7 +980,7 @@
           color: var(--text);
         }
 
-        /* بطاقة الطالب القابلة للطباعة */
+        /* بطاقة الطالب (تُستخدم في العرض والتنزيل) */
         #idCardPrintArea {
           background: #ffffff;
           color: #1a202c;
@@ -996,6 +1076,7 @@
         }
 
         .qr-mini-card {
+          position: relative;
           background: #ffffff;
           color: #1a202c;
           border-radius: 14px;
@@ -1003,6 +1084,25 @@
           text-align: center;
           box-shadow: 0 6px 20px rgba(0,0,0,0.25);
           transition: transform 0.2s ease;
+        }
+
+        .qr-card-select {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+        }
+
+        .qr-card-select input {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+        }
+
+        .qr-card-actions {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
         }
 
         .qr-mini-card:hover {
@@ -1068,12 +1168,12 @@
     <nav>
         <div class="container">
             <ul class="nav-links">
-                <li><a href="#" class="nav-link active" data-section="students">إدارة الطلاب</a></li>
-                <li><a href="#" class="nav-link" data-section="weeks">إدارة الأسابيع</a></li>
-                <li><a href="#" class="nav-link" data-section="attendance">تسجيل الغياب</a></li>
-                <li><a href="#" class="nav-link" data-section="qrcodes">أكواد QR</a></li>
-                <li><a href="#" class="nav-link" data-section="search">البحث عن طالب</a></li>
-                <li><a href="#" class="nav-link" data-section="reports">التقارير</a></li>
+                <li><a href="#" class="nav-link active" data-section="students"><i class="fas fa-user-graduate"></i><span>إدارة الطلاب</span></a></li>
+                <li><a href="#" class="nav-link" data-section="weeks"><i class="fas fa-calendar-week"></i><span>إدارة الأسابيع</span></a></li>
+                <li><a href="#" class="nav-link" data-section="attendance"><i class="fas fa-clipboard-check"></i><span>تسجيل الغياب</span></a></li>
+                <li><a href="#" class="nav-link" data-section="qrcodes"><i class="fas fa-qrcode"></i><span>أكواد QR وواتساب</span></a></li>
+                <li><a href="#" class="nav-link" data-section="search"><i class="fas fa-search"></i><span>البحث عن طالب</span></a></li>
+                <li><a href="#" class="nav-link" data-section="reports"><i class="fas fa-chart-bar"></i><span>التقارير</span></a></li>
             </ul>
         </div>
     </nav>
@@ -1161,8 +1261,8 @@
                     <div class="card-student-id" id="idCardStudentId"></div>
                 </div>
                 <div class="modal-actions">
-                    <button class="btn btn-success" onclick="printIdCard()">
-                        <i class="fas fa-print"></i> طباعة البطاقة
+                    <button class="btn btn-success" onclick="downloadIdCardQr()">
+                        <i class="fas fa-download"></i> تنزيل QR
                     </button>
                 </div>
             </div>
@@ -1273,7 +1373,7 @@
         
         <!-- قسم إنشاء أكواد QR لكل طالب -->
         <section id="qrcodes" class="section">
-            <h2 class="section-title">أكواد QR للطلاب</h2>
+            <h2 class="section-title"><i class="fas fa-qrcode"></i> أكواد QR وإرسال واتساب</h2>
 
             <div class="attendance-toolbar">
                 <div class="form-group">
@@ -1281,8 +1381,40 @@
                     <input type="text" id="qrSearchInput" placeholder="اكتب اسم الطالب للتصفية...">
                 </div>
                 <button type="button" class="btn btn-success" id="printAllQrBtn">
-                    <i class="fas fa-print"></i>&nbsp; طباعة جميع البطاقات
+                    <i class="fas fa-file-archive"></i>&nbsp; تنزيل جميع الأكواد (ZIP)
                 </button>
+            </div>
+
+            <!-- إعدادات وتحكم إرسال الأكواد عبر واتساب (بجانب أكواد QR مباشرة) -->
+            <div class="glass-card" style="padding:18px; border-radius:14px; margin-bottom:20px;">
+                <h3 style="margin-bottom:15px;"><i class="fab fa-whatsapp" style="color:#25d366;"></i> إرسال الأكواد عبر واتساب</h3>
+
+                <div class="form-group">
+                    <label for="waCountryCode">مفتاح الدولة (يُضاف تلقائيًا لأي رقم لا يبدأ به)</label>
+                    <input type="text" id="waCountryCode" value="20" placeholder="مثال: 20">
+                </div>
+
+                <div class="form-group">
+                    <label for="waMessageTemplate">نص الرسالة (يمكن استخدام {name} لاسم الطالب، {id} لمعرفه، {stage} للمرحلة، {qr} لرابط صورة QR)</label>
+                    <textarea id="waMessageTemplate" rows="5">مرحبًا {name} 🌟
+هذا هو رمز QR الخاص بك لتسجيل الحضور في مدرسة بي نيشتي ايبسكوبس:
+{qr}
+يرجى الاحتفاظ به وإحضاره معك كل أسبوع.</textarea>
+                </div>
+
+                <div class="attendance-toolbar">
+                    <button type="button" class="btn" id="waSelectAllBtn">
+                        <i class="fas fa-check-double"></i> تحديد الكل
+                    </button>
+                    <button type="button" class="btn btn-whatsapp" id="waSendSelectedBtn">
+                        <i class="fab fa-whatsapp"></i> تجهيز روابط واتساب للمحددين (<span id="waSelectedCount">0</span>)
+                    </button>
+                </div>
+                <div style="font-size:13px; color: var(--text-light); margin-top:-5px;">
+                    <i class="fas fa-circle-info"></i> حدد الطلاب من المربعات أعلى كل كارت QR بالأسفل، ثم اضغط "تجهيز روابط واتساب" وسيظهر لكل طالب زر مستقل لفتح واتساب (المتصفح يمنع فتح عدة نوافذ تلقائيًا دفعة واحدة).
+                </div>
+
+                <div id="waSendResults" style="display:none; margin-top:15px;"></div>
             </div>
 
             <div id="qrCodesLoading" class="section-loading">
@@ -1360,6 +1492,7 @@
         // تهيئة Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const storage = firebase.storage();
     
         let students = [];
         let weeks = [];
@@ -1559,11 +1692,30 @@ let currentSelectedReportWeek = '';
         // -------------------------
         // 📌 3.1) بطاقة الطالب و QR Code
         // -------------------------
+        let currentIdCardStudentId = null;
+
+        // تنظيف اسم الملف من الرموز غير المسموحة
+        function sanitizeFileName(name) {
+            return (name || 'qr').replace(/[\\/:*?"<>|]/g, '-').trim();
+        }
+
+        // تنزيل عنصر canvas كصورة PNG
+        function downloadCanvasAsPng(canvas, fileName) {
+            if (!canvas) return;
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // عرض بطاقة الطالب مع QR الخاص به
         function showIdCard(studentId) {
             const student = students.find(s => s.id === studentId);
             if (!student) return;
 
+            currentIdCardStudentId = studentId;
             const code = student.studentCode || student.id;
 
             document.getElementById('idCardStudentName').textContent = student.name;
@@ -1587,30 +1739,14 @@ let currentSelectedReportWeek = '';
             document.getElementById('idCardModal').classList.remove('active');
         }
 
-        // طباعة بطاقة الطالب
-        function printIdCard() {
-            const cardHTML = document.getElementById('idCardPrintArea').outerHTML;
-            const printWindow = window.open('', '_blank', 'width=400,height=600');
-            printWindow.document.write(`
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>بطاقة الطالب</title>
-                    <style>
-                        body { font-family: Tajawal, Arial, sans-serif; display:flex; justify-content:center; padding:30px; }
-                        #idCardPrintArea { background:#fff; color:#1a202c; border-radius:14px; padding:20px; max-width:280px; box-shadow:0 6px 20px rgba(0,0,0,0.25); text-align:center; }
-                        .card-school-name { font-weight:700; font-size:15px; margin-bottom:10px; color:#2c3e50; }
-                        .card-student-name { font-weight:700; font-size:17px; margin:10px 0 4px; }
-                        .card-student-id { font-size:13px; direction:ltr; color:#3498db; font-weight:600; margin-bottom:10px; }
-                        #qrcodeCanvas { display:flex; justify-content:center; margin:10px auto; }
-                    </style>
-                </head>
-                <body onload="window.print(); window.close();">
-                    ${cardHTML}
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+        // تنزيل كود QR الخاص بالطالب المعروض في النافذة المنبثقة
+        function downloadIdCardQr() {
+            const student = students.find(s => s.id === currentIdCardStudentId);
+            if (!student) return;
+
+            const canvas = document.querySelector('#qrcodeCanvas canvas');
+            const code = student.studentCode || student.id;
+            downloadCanvasAsPng(canvas, `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`);
         }
 
         // -------------------------
@@ -1646,13 +1782,21 @@ let currentSelectedReportWeek = '';
                         card.className = 'qr-mini-card';
                         card.id = `qrMiniCard-${student.id}`;
                         card.innerHTML = `
+                            <label class="qr-card-select">
+                                <input type="checkbox" class="wa-student-checkbox" data-id="${student.id}" onchange="updateWaSelectedCount()">
+                            </label>
                             <div class="card-school-name">مدرسة بي نيشتي ايبسكوبس</div>
                             <div class="qr-mini-canvas" id="qrMiniCanvas-${student.id}"></div>
                             <div class="card-student-name">${student.name}</div>
                             <div class="card-student-id">${code}</div>
-                            <button class="btn btn-success" onclick="printSingleMiniCard('${student.id}')">
-                                <i class="fas fa-print"></i> طباعة
-                            </button>
+                            <div class="qr-card-actions">
+                                <button class="btn btn-success" onclick="downloadMiniCardQr('${student.id}')">
+                                    <i class="fas fa-download"></i> تنزيل
+                                </button>
+                                <button class="btn btn-whatsapp" onclick="sendWhatsAppToStudent('${student.id}')">
+                                    <i class="fab fa-whatsapp"></i> إرسال
+                                </button>
+                            </div>
                         `;
                         gridEl.appendChild(card);
 
@@ -1696,68 +1840,251 @@ let currentSelectedReportWeek = '';
             loadQrCodesGrid(this.value);
         });
 
-        // طباعة بطاقة QR لطالب واحد من داخل الشبكة
-        function printSingleMiniCard(studentId) {
-            const cardEl = document.getElementById(`qrMiniCard-${studentId}`);
-            if (!cardEl) return;
+        // تنزيل كود QR لطالب واحد من داخل الشبكة
+        function downloadMiniCardQr(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
 
-            const printWindow = window.open('', '_blank', 'width=400,height=600');
-            printWindow.document.write(`
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>بطاقة الطالب</title>
-                    <style>
-                        body { font-family: Tajawal, Arial, sans-serif; display:flex; justify-content:center; padding:30px; }
-                        .qr-mini-card { background:#fff; color:#1a202c; border-radius:14px; padding:20px; max-width:280px; box-shadow:0 6px 20px rgba(0,0,0,0.25); text-align:center; }
-                        .card-school-name { font-weight:700; font-size:13px; margin-bottom:10px; color:#2c3e50; }
-                        .card-student-name { font-weight:700; font-size:17px; margin:10px 0 4px; }
-                        .card-student-id { font-size:13px; direction:ltr; color:#3498db; font-weight:600; margin-bottom:10px; }
-                        .qr-mini-canvas { display:flex; justify-content:center; margin:10px auto; }
-                        button { display:none; }
-                    </style>
-                </head>
-                <body onload="window.print(); window.close();">
-                    ${cardEl.outerHTML}
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+            const canvas = document.querySelector(`#qrMiniCanvas-${studentId} canvas`);
+            const code = student.studentCode || student.id;
+            downloadCanvasAsPng(canvas, `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`);
         }
 
-        // طباعة جميع بطاقات QR دفعة واحدة
-        document.getElementById('printAllQrBtn').addEventListener('click', function() {
+        // تنزيل جميع أكواد QR دفعة واحدة كملف ZIP واحد
+        document.getElementById('printAllQrBtn').addEventListener('click', async function() {
             const gridEl = document.getElementById('qrCodesGrid');
             if (!gridEl || gridEl.children.length === 0) {
-                alert('لا توجد بطاقات لطباعتها.');
+                alert('لا توجد أكواد QR لتنزيلها.');
                 return;
             }
 
-            const printWindow = window.open('', '_blank', 'width=800,height=900');
-            printWindow.document.write(`
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>بطاقات QR لجميع الطلاب</title>
-                    <style>
-                        body { font-family: Tajawal, Arial, sans-serif; padding:20px; }
-                        .qr-print-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:20px; }
-                        .qr-mini-card { background:#fff; color:#1a202c; border-radius:14px; padding:18px 14px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.15); page-break-inside: avoid; }
-                        .card-school-name { font-weight:700; font-size:12px; margin-bottom:8px; color:#2c3e50; }
-                        .card-student-name { font-weight:700; font-size:15px; margin:8px 0 3px; }
-                        .card-student-id { font-size:12px; direction:ltr; color:#3498db; font-weight:600; margin-bottom:10px; }
-                        .qr-mini-canvas { display:flex; justify-content:center; margin:8px auto; }
-                        button { display:none; }
-                    </style>
-                </head>
-                <body onload="window.print(); window.close();">
-                    <div class="qr-print-grid">${gridEl.innerHTML}</div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+            const btn = this;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز الملف...';
+
+            try {
+                const zip = new JSZip();
+
+                Array.from(gridEl.children).forEach(card => {
+                    const canvas = card.querySelector('canvas');
+                    if (!canvas) return;
+
+                    const nameEl = card.querySelector('.card-student-name');
+                    const idEl = card.querySelector('.card-student-id');
+                    const fileName = `${sanitizeFileName(nameEl ? nameEl.textContent : 'qr')}_${sanitizeFileName(idEl ? idEl.textContent : '')}.png`;
+
+                    const base64Data = canvas.toDataURL('image/png').split(',')[1];
+                    zip.file(fileName, base64Data, { base64: true });
+                });
+
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const zipUrl = URL.createObjectURL(zipBlob);
+
+                const link = document.createElement('a');
+                link.href = zipUrl;
+                link.download = 'أكواد_QR_للطلاب.zip';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(zipUrl);
+            } catch (error) {
+                console.error('خطأ في تجهيز ملف ZIP:', error);
+                alert('حدث خطأ أثناء تجهيز ملف الأكواد. يرجى المحاولة مرة أخرى.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
         });
-    
+
+        // -------------------------
+        // 📌 3.3) إرسال أكواد QR عبر واتساب
+        // -------------------------
+        // تحويل رقم الهاتف إلى الصيغة الدولية المطلوبة لروابط واتساب
+        function normalizePhoneForWhatsapp(phone, countryCode) {
+            let digits = (phone || '').replace(/[^\d]/g, '');
+            if (!digits) return '';
+            const cc = (countryCode || '').replace(/[^\d]/g, '');
+            if (cc && digits.startsWith(cc)) return digits;
+            if (digits.startsWith('0')) digits = digits.substring(1);
+            return cc + digits;
+        }
+
+        // توليد صورة QR للطالب ورفعها على Firebase Storage (أو استخدام الرابط المخزن مسبقًا)
+        async function getStudentQrImageUrl(student) {
+            if (student.qrImageUrl) return student.qrImageUrl;
+
+            const code = student.studentCode || student.id;
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'fixed';
+            tempContainer.style.left = '-9999px';
+            document.body.appendChild(tempContainer);
+
+            new QRCode(tempContainer, {
+                text: code,
+                width: 300,
+                height: 300,
+                colorDark: '#1a202c',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            const canvas = tempContainer.querySelector('canvas');
+            const dataUrl = canvas.toDataURL('image/png');
+            document.body.removeChild(tempContainer);
+
+            const blob = await (await fetch(dataUrl)).blob();
+            const storageRef = storage.ref().child(`qrcodes/${student.id}.png`);
+            await storageRef.put(blob);
+            const url = await storageRef.getDownloadURL();
+
+            await db.collection('students').doc(student.id).update({ qrImageUrl: url });
+            student.qrImageUrl = url;
+
+            return url;
+        }
+
+        // بناء نص الرسالة من القالب
+        function buildWaMessage(template, student, qrUrl) {
+            return template
+                .replaceAll('{name}', student.name || '')
+                .replaceAll('{id}', student.studentCode || student.id || '')
+                .replaceAll('{stage}', student.stage || '')
+                .replaceAll('{qr}', qrUrl || '');
+        }
+
+        // إرسال رابط QR لطالب واحد عبر واتساب
+        async function sendWhatsAppToStudent(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return false;
+
+            const countryCode = document.getElementById('waCountryCode').value.trim() || '20';
+            const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
+
+            if (!phone) {
+                alert(`لا يوجد رقم هاتف مسجل للطالب: ${student.name}`);
+                return false;
+            }
+
+            // نفتح تبويبًا فارغًا فورًا (في نفس لحظة الضغط) حتى لا يمنعه المتصفح باعتباره نافذة منبثقة،
+            // ثم نوجّهه لرابط واتساب بعد تجهيز الرسالة (هذا هو سبب توقف الإرسال سابقًا)
+            const waWindow = window.open('', '_blank');
+
+            try {
+                const qrUrl = await getStudentQrImageUrl(student);
+                const template = document.getElementById('waMessageTemplate').value;
+                const message = buildWaMessage(template, student, qrUrl);
+                const link = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+                if (waWindow) {
+                    waWindow.location.href = link;
+                } else {
+                    alert(`تم حجب فتح واتساب للطالب: ${student.name}. يرجى السماح بالنوافذ المنبثقة (Pop-ups) لهذا الموقع من إعدادات المتصفح، ثم إعادة المحاولة.`);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('خطأ في تجهيز رمز QR لواتساب:', error);
+                if (waWindow) waWindow.close();
+                alert(`تعذر تجهيز رمز QR للطالب: ${student.name}. تأكد من إعدادات Firebase Storage.`);
+                return false;
+            }
+        }
+
+        // تحديث عداد الطلاب المحددين لإرسال واتساب (يعتمد على مربعات الاختيار في شبكة أكواد QR)
+        function updateWaSelectedCount() {
+            const count = document.querySelectorAll('.wa-student-checkbox:checked').length;
+            const countEl = document.getElementById('waSelectedCount');
+            if (countEl) countEl.textContent = count;
+        }
+
+        // تحديد/إلغاء تحديد جميع الطلاب الظاهرين في شبكة أكواد QR
+        document.getElementById('waSelectAllBtn').addEventListener('click', function() {
+            const boxes = document.querySelectorAll('.wa-student-checkbox');
+            const allChecked = boxes.length > 0 && Array.from(boxes).every(cb => cb.checked);
+            boxes.forEach(cb => cb.checked = !allChecked);
+            this.innerHTML = !allChecked
+                ? '<i class="fas fa-times"></i> إلغاء التحديد'
+                : '<i class="fas fa-check-double"></i> تحديد الكل';
+            updateWaSelectedCount();
+        });
+
+        // تجهيز روابط واتساب لكل الطلاب المحددين، وعرض زر فتح مستقل لكل طالب
+        // (المتصفحات تمنع فتح عدة نوافذ منبثقة تلقائيًا دفعة واحدة، لذلك كل رابط يُفتح بضغطة مستخدم حقيقية)
+        document.getElementById('waSendSelectedBtn').addEventListener('click', async function() {
+            const checkboxes = Array.from(document.querySelectorAll('.wa-student-checkbox:checked'));
+
+            if (checkboxes.length === 0) {
+                alert('يرجى تحديد طالب واحد على الأقل قبل الإرسال.');
+                return;
+            }
+
+            const sendBtn = this;
+            sendBtn.disabled = true;
+            const originalHTML = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز الروابط...';
+
+            const resultsBox = document.getElementById('waSendResults');
+            resultsBox.style.display = 'block';
+            resultsBox.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>اسم الطالب</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody id="waSendResultsBody"></tbody>
+                    </table>
+                </div>
+            `;
+            const tbody = document.getElementById('waSendResultsBody');
+
+            for (let i = 0; i < checkboxes.length; i++) {
+                const studentId = checkboxes[i].getAttribute('data-id');
+                const student = students.find(s => s.id === studentId);
+                if (!student) continue;
+
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                nameCell.textContent = student.name;
+                const statusCell = document.createElement('td');
+                statusCell.innerHTML = '<div class="loading-small"></div> جاري التجهيز...';
+                row.appendChild(nameCell);
+                row.appendChild(statusCell);
+                tbody.appendChild(row);
+
+                const countryCode = document.getElementById('waCountryCode').value.trim() || '20';
+                const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
+
+                if (!phone) {
+                    statusCell.innerHTML = '<span style="color:var(--accent);">لا يوجد رقم هاتف</span>';
+                    continue;
+                }
+
+                try {
+                    const qrUrl = await getStudentQrImageUrl(student);
+                    const template = document.getElementById('waMessageTemplate').value;
+                    const message = buildWaMessage(template, student, qrUrl);
+                    const link = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+                    const openBtn = document.createElement('button');
+                    openBtn.type = 'button';
+                    openBtn.className = 'btn btn-whatsapp';
+                    openBtn.style.cssText = 'padding:6px 14px; font-size:13px;';
+                    openBtn.innerHTML = '<i class="fab fa-whatsapp"></i> فتح واتساب';
+                    openBtn.addEventListener('click', () => window.open(link, '_blank'));
+
+                    statusCell.innerHTML = '';
+                    statusCell.appendChild(openBtn);
+                } catch (error) {
+                    console.error('خطأ في تجهيز رمز QR لواتساب:', error);
+                    statusCell.innerHTML = '<span style="color:var(--accent);">تعذر تجهيز رمز QR</span>';
+                }
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalHTML;
+        });
+
         // -------------------------
         // 📌 4) إدارة الأسابيع
         // -------------------------
@@ -2024,6 +2351,35 @@ function loadAttendanceForWeek(weekId) {
             }
         }
 
+        // تشغيل نغمة ترن قصيرة لتأكيد نجاح تسجيل حضور الطالب بعد مسح كود QR
+        function playScanConfirmSound() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioCtx();
+                const now = audioCtx.currentTime;
+
+                // نغمتان متتاليتان قصيرتان تشبهان "دينج" التأكيد
+                [880, 1320].forEach((freq, index) => {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(freq, now);
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    const startTime = now + index * 0.12;
+                    gainNode.gain.setValueAtTime(0.0001, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.35, startTime + 0.02);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.25);
+
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + 0.26);
+                });
+            } catch (error) {
+                console.error('تعذر تشغيل نغمة التأكيد:', error);
+            }
+        }
+
         // عند نجاح مسح كود QR
         function onQrScanSuccess(decodedText) {
             const now = Date.now();
@@ -2048,6 +2404,9 @@ function loadAttendanceForWeek(weekId) {
 
             // تسجيل الطالب كحاضر للأسبوع الحالي
             toggleAttendance(student.id, currentAttendanceWeekId, true);
+
+            // تشغيل نغمة ترن لتأكيد نجاح التسجيل
+            playScanConfirmSound();
 
             resultBox.style.borderColor = 'var(--success)';
             resultBox.style.background = 'rgba(46, 204, 113, 0.15)';
