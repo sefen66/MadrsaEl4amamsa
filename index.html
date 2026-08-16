@@ -1155,7 +1155,7 @@
     <header>
         <div class="container">
             <div class="logo">
-                <h1> خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات </h1>
+                <h1>خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</h1>
                 <div class="school-logo">
                     <div class="logo-frame">
                       <img src="WhatsApp Image 2025-09-25 at 13.04.33_37954a2f.jpg" alt="School Logo">
@@ -1255,7 +1255,7 @@
                 <button class="modal-close" onclick="closeIdCardModal()"><i class="fas fa-times"></i></button>
                 <h3><i class="fas fa-id-card"></i> بطاقة الطالب</h3>
                 <div id="idCardPrintArea">
-                    <div class="card-school-name">خدمة ابولوجيا للدفاعيات</div>
+                    <div class="card-school-name">خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</div>
                     <div id="qrcodeCanvas"></div>
                     <div class="card-student-name" id="idCardStudentName"></div>
                     <div class="card-student-id" id="idCardStudentId"></div>
@@ -1701,6 +1701,117 @@ let currentSelectedReportWeek = '';
             return (name || 'qr').replace(/[\\/:*?"<>|]/g, '-').trim();
         }
 
+        // رسم مستطيل بحواف دائرية (مسار) يُستخدم في تصميم بطاقة QR
+        function drawRoundedRectPath(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.arcTo(x + w, y, x + w, y + r, r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+            ctx.lineTo(x + r, y + h);
+            ctx.arcTo(x, y + h, x, y + h - r, r);
+            ctx.lineTo(x, y + r);
+            ctx.arcTo(x, y, x + r, y, r);
+            ctx.closePath();
+        }
+
+        // توليد بطاقة QR بتصميم منسّق (اسم المدرسة + كود QR + اسم الطالب + كوده) على عنصر canvas واحد
+        // تُستخدم هذه الصورة في: التنزيل الفردي، ملف الـ ZIP، وصورة رابط واتساب
+        function generateQrCardCanvas(student) {
+            const code = student.studentCode || student.id;
+            const width = 380;
+            const height = 500;
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.textAlign = 'center';
+            ctx.direction = 'rtl';
+
+            // ظل خفيف حول البطاقة
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.25)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 8;
+            ctx.fillStyle = '#ffffff';
+            drawRoundedRectPath(ctx, 6, 6, width - 12, height - 12, 20);
+            ctx.fill();
+            ctx.restore();
+
+            // قص الرسم داخل حدود البطاقة حتى لا يخرج الشريط العلوي عن حوافها الدائرية
+            ctx.save();
+            drawRoundedRectPath(ctx, 6, 6, width - 12, height - 12, 20);
+            ctx.clip();
+
+            // شريط علوي متدرج بلون التطبيق
+            const gradient = ctx.createLinearGradient(0, 0, width, 0);
+            gradient.addColorStop(0, '#3498db');
+            gradient.addColorStop(1, '#2980b9');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, 78);
+
+            // اسم المدرسة
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 19px Tajawal, Arial, sans-serif';
+            ctx.fillText('خدمة ابولوجيا للدفاعيات', width / 2, 46);
+            ctx.restore();
+
+            // إطار أبيض حول كود QR
+            const qrSize = 230;
+            const qrX = (width - qrSize) / 2;
+            const qrY = 105;
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#ffffff';
+            drawRoundedRectPath(ctx, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 14);
+            ctx.fill();
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // توليد كود QR في عنصر مؤقت مخفي، ثم رسمه داخل البطاقة
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'fixed';
+            tempContainer.style.left = '-9999px';
+            document.body.appendChild(tempContainer);
+            new QRCode(tempContainer, {
+                text: code,
+                width: qrSize,
+                height: qrSize,
+                colorDark: '#1a202c',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            const qrCanvas = tempContainer.querySelector('canvas');
+            ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+            document.body.removeChild(tempContainer);
+
+            // اسم الطالب
+            ctx.fillStyle = '#1a202c';
+            ctx.font = 'bold 21px Tajawal, Arial, sans-serif';
+            ctx.fillText(student.name || '', width / 2, qrY + qrSize + 46);
+
+            // كود الطالب
+            ctx.fillStyle = '#3498db';
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.direction = 'ltr';
+            ctx.fillText(code, width / 2, qrY + qrSize + 76);
+            ctx.direction = 'rtl';
+
+            // المرحلة (إن وُجدت)
+            if (student.stage) {
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = '15px Tajawal, Arial, sans-serif';
+                ctx.fillText('المرحلة: ' + student.stage, width / 2, qrY + qrSize + 103);
+            }
+
+            return canvas;
+        }
+
         // تنزيل عنصر canvas كصورة PNG
         function downloadCanvasAsPng(canvas, fileName) {
             if (!canvas) return;
@@ -1741,14 +1852,14 @@ let currentSelectedReportWeek = '';
             document.getElementById('idCardModal').classList.remove('active');
         }
 
-        // تنزيل كود QR الخاص بالطالب المعروض في النافذة المنبثقة
+        // تنزيل كود QR الخاص بالطالب المعروض في النافذة المنبثقة (بتصميم البطاقة المنسّق)
         function downloadIdCardQr() {
             const student = students.find(s => s.id === currentIdCardStudentId);
             if (!student) return;
 
-            const canvas = document.querySelector('#qrcodeCanvas canvas');
+            const cardCanvas = generateQrCardCanvas(student);
             const code = student.studentCode || student.id;
-            downloadCanvasAsPng(canvas, `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`);
+            downloadCanvasAsPng(cardCanvas, `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`);
         }
 
         // -------------------------
@@ -1787,7 +1898,7 @@ let currentSelectedReportWeek = '';
                             <label class="qr-card-select">
                                 <input type="checkbox" class="wa-student-checkbox" data-id="${student.id}" onchange="updateWaSelectedCount()">
                             </label>
-                            <div class="card-school-name">مدرسة بي نيشتي ايبسكوبس</div>
+                            <div class="card-school-name">خدمة ابولوجيا للدفاعيات</div>
                             <div class="qr-mini-canvas" id="qrMiniCanvas-${student.id}"></div>
                             <div class="card-student-name">${student.name}</div>
                             <div class="card-student-id">${code}</div>
@@ -1842,17 +1953,17 @@ let currentSelectedReportWeek = '';
             loadQrCodesGrid(this.value);
         });
 
-        // تنزيل كود QR لطالب واحد من داخل الشبكة
+        // تنزيل كود QR لطالب واحد من داخل الشبكة (بتصميم البطاقة المنسّق)
         function downloadMiniCardQr(studentId) {
             const student = students.find(s => s.id === studentId);
             if (!student) return;
 
-            const canvas = document.querySelector(`#qrMiniCanvas-${studentId} canvas`);
+            const cardCanvas = generateQrCardCanvas(student);
             const code = student.studentCode || student.id;
-            downloadCanvasAsPng(canvas, `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`);
+            downloadCanvasAsPng(cardCanvas, `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`);
         }
 
-        // تنزيل جميع أكواد QR دفعة واحدة كملف ZIP واحد
+        // تنزيل جميع أكواد QR دفعة واحدة كملف ZIP واحد (كل صورة بتصميم البطاقة المنسّق)
         document.getElementById('printAllQrBtn').addEventListener('click', async function() {
             const gridEl = document.getElementById('qrCodesGrid');
             if (!gridEl || gridEl.children.length === 0) {
@@ -1869,14 +1980,15 @@ let currentSelectedReportWeek = '';
                 const zip = new JSZip();
 
                 Array.from(gridEl.children).forEach(card => {
-                    const canvas = card.querySelector('canvas');
-                    if (!canvas) return;
+                    const studentId = (card.id || '').replace('qrMiniCard-', '');
+                    const student = students.find(s => s.id === studentId);
+                    if (!student) return;
 
-                    const nameEl = card.querySelector('.card-student-name');
-                    const idEl = card.querySelector('.card-student-id');
-                    const fileName = `${sanitizeFileName(nameEl ? nameEl.textContent : 'qr')}_${sanitizeFileName(idEl ? idEl.textContent : '')}.png`;
+                    const code = student.studentCode || student.id;
+                    const fileName = `${sanitizeFileName(student.name)}_${sanitizeFileName(code)}.png`;
 
-                    const base64Data = canvas.toDataURL('image/png').split(',')[1];
+                    const cardCanvas = generateQrCardCanvas(student);
+                    const base64Data = cardCanvas.toDataURL('image/png').split(',')[1];
                     zip.file(fileName, base64Data, { base64: true });
                 });
 
@@ -1917,6 +2029,9 @@ let currentSelectedReportWeek = '';
         // تمنع الرفع من تطبيق بدون تسجيل دخول (Authentication)، وهو سبب رسالة الخطأ السابقة.
         // الحل الأبسط والأضمن: توليد رابط مباشر لصورة QR عبر خدمة عامة، فلا حاجة لأي رفع أو صلاحيات.
         function getStudentQrImageUrl(student) {
+            // ملحوظة: رابط QR بسيط وسريع بدون رفع أي صورة على أي سيرفر خارجي أو Firebase Storage.
+            // (محاولة سابقة كانت بترفع صورة البطاقة المصممة على Firebase Storage، لكن ده كان بياخد
+            // وقت طويل ويخلي التبويب اللي فتحناه لواتساب يفضل about:blank من غير ما يتم توجيهه.)
             const code = student.studentCode || student.id;
             return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}`;
         }
@@ -2328,29 +2443,13 @@ function loadAttendanceForWeek(weekId) {
             }
         }
 
-        // تشغيل نغمة ترن قصيرة لتأكيد نجاح تسجيل حضور الطالب بعد مسح كود QR
+        // تشغيل نغمة ترن لتأكيد نجاح تسجيل حضور الطالب بعد مسح كود QR
+        const scanConfirmAudio = new Audio('ring.wav');
         function playScanConfirmSound() {
             try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioCtx();
-                const now = audioCtx.currentTime;
-
-                // نغمتان متتاليتان قصيرتان تشبهان "دينج" التأكيد
-                [880, 1320].forEach((freq, index) => {
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(freq, now);
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-
-                    const startTime = now + index * 0.12;
-                    gainNode.gain.setValueAtTime(0.0001, startTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.35, startTime + 0.02);
-                    gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.25);
-
-                    oscillator.start(startTime);
-                    oscillator.stop(startTime + 0.26);
+                scanConfirmAudio.currentTime = 0;
+                scanConfirmAudio.play().catch(error => {
+                    console.error('تعذر تشغيل نغمة التأكيد:', error);
                 });
             } catch (error) {
                 console.error('تعذر تشغيل نغمة التأكيد:', error);
