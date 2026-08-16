@@ -171,6 +171,147 @@
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+
+        /* -------------------------
+           بطاقة الطالب (الصفحة اللي بتفتح للطالب من رابط واتساب)
+           ------------------------- */
+        .student-card-view {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            width: 100%;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(102,126,234,0.28), transparent 55%),
+                radial-gradient(circle at 85% 85%, rgba(118,75,162,0.28), transparent 55%),
+                var(--bg-primary);
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            direction: rtl;
+            text-align: center;
+            font-family: 'Tajawal', sans-serif;
+            overflow-y: auto;
+        }
+
+        .student-card-box {
+            width: 100%;
+            max-width: 420px;
+            border-radius: 24px;
+            padding: 34px 24px 28px;
+            margin: auto;
+            animation: card-pop 0.5s ease;
+        }
+
+        @keyframes card-pop {
+            from { opacity: 0; transform: translateY(16px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .student-card-logo {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 14px;
+            border-radius: 18px;
+            padding: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            animation: gradient-shift 4s ease infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.4);
+        }
+
+        .student-card-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 2px solid rgba(255,255,255,0.15);
+        }
+
+        .student-card-service {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: .3px;
+        }
+
+        .student-card-sub {
+            font-size: 12.5px;
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        .student-card-welcome {
+            font-size: 13.5px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .student-card-name {
+            font-size: 25px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #8ea6f2, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0 0 10px;
+            word-break: break-word;
+        }
+
+        .student-card-stage {
+            display: inline-block;
+            font-size: 12.5px;
+            color: var(--text-light);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 16px;
+            margin-bottom: 22px;
+        }
+
+        .student-card-qr-wrap {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+        }
+
+        .student-card-code {
+            font-size: 13px;
+            color: var(--text-light);
+            letter-spacing: .5px;
+            margin-bottom: 20px;
+            direction: ltr;
+            unicode-bidi: plaintext;
+        }
+
+        .student-card-hint {
+            font-size: 13.5px;
+            color: var(--text);
+            line-height: 1.9;
+            margin: 0;
+        }
+
+        .student-card-footer {
+            margin-top: 22px;
+            font-size: 11.5px;
+            color: var(--text-light);
+            opacity: .8;
+        }
+
+        /* لما تكون الصفحة مفتوحة كبطاقة طالب، نخفي باقي التطبيق تمامًا */
+        body.card-mode > *:not(#studentCardView) {
+            display: none !important;
+        }
         
         /* تحسينات البحث */
         .search-container {
@@ -1144,6 +1285,30 @@
     </style>
 </head>
 <body>
+    <!-- بطاقة الطالب: الصفحة اللي بتفتح للطالب لما يضغط على رابط واتساب -->
+    <!-- بتتظهر فورًا من غير انتظار لأن بياناتها متبعتة جوه الرابط نفسه -->
+    <div id="studentCardView" class="student-card-view">
+        <div class="student-card-box glass-card">
+            <div class="student-card-logo">
+                <img src="WhatsApp Image 2025-09-25 at 13.04.33_37954a2f.jpg" alt="شعار الخدمة">
+            </div>
+            <div class="student-card-service">خدمة ابولوجيا للدفاعيات</div>
+            <div class="student-card-sub">كورس أ ب دفاعيات</div>
+            <div class="student-card-welcome">أهلاً بيك</div>
+            <h1 class="student-card-name" id="cardStudentName">الطالب</h1>
+            <div class="student-card-stage" id="cardStudentStage" style="display:none;"></div>
+            <div class="student-card-qr-wrap">
+                <div id="cardQrCode"></div>
+            </div>
+            <div class="student-card-code" id="cardStudentCode"></div>
+            <p class="student-card-hint">
+                ده كود الـ QR الخاص بيك لتسجيل الحضور 🙏<br>
+                خد له سكرين شوت واحتفظ بيه، وابعته كل مرة تيجي فيها.
+            </p>
+            <div class="student-card-footer">خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</div>
+        </div>
+    </div>
+
     <!-- شاشة التحميل الرئيسية -->
     <div id="loadingOverlay" class="loading-overlay">
         <div style="text-align: center;">
@@ -1395,9 +1560,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="waMessageTemplate">نص الرسالة (يمكن استخدام {name} لاسم الطالب، {id} لمعرفه، {stage} للمرحلة، {qr} لرابط صورة QR)</label>
+                    <label for="waMessageTemplate">نص الرسالة (يمكن استخدام {name} لاسم الطالب، {id} لمعرفه، {stage} للمرحلة، {qr} لرابط بطاقة الطالب وكود الـQR بتاعه)</label>
                     <textarea id="waMessageTemplate" rows="5">مرحبًا {name} 😍
-ده رمز ال QR الخاص بك لتسجيل الحضور في خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات:
+ده رابط بطاقتك وكود الـ QR الخاص بيك لتسجيل الحضور في خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات:
 
 {qr}
 افتح اللينك وخده سكرين وتعالا بيه كل مره ❤
@@ -1480,6 +1645,48 @@
     </div>
 
     <script>
+        // -------------------------
+        // 📌 0.0) صفحة "بطاقة الطالب" (اللي بتفتح من رابط واتساب)
+        // -------------------------
+        // بتشتغل فورًا وقبل أي حاجة تانية، وكل بياناتها (الاسم/المرحلة/الكود) جايالها
+        // جوه الرابط نفسه كـ query params، فمش محتاجة تتصل بـ Firebase أو أي سيرفر خارجي.
+        // ده اللي بيخلي الصفحة تفتح فورًا للطالب بدون ما تفضل عالقة على about:blank.
+        function renderStudentCardIfNeeded() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('card') !== '1') return false;
+
+            const name = (params.get('name') || 'الطالب').trim();
+            const stage = (params.get('stage') || '').trim();
+            const code = (params.get('code') || '').trim();
+
+            document.body.classList.add('card-mode');
+            document.getElementById('cardStudentName').textContent = name || 'الطالب';
+
+            const stageEl = document.getElementById('cardStudentStage');
+            if (stage) {
+                stageEl.textContent = `المرحلة: ${stage}`;
+                stageEl.style.display = 'inline-block';
+            }
+
+            const codeEl = document.getElementById('cardStudentCode');
+            if (code) codeEl.textContent = `الكود: ${code}`;
+
+            document.getElementById('studentCardView').style.display = 'flex';
+
+            const qrContainer = document.getElementById('cardQrCode');
+            if (code && qrContainer && window.QRCode) {
+                new QRCode(qrContainer, {
+                    text: code,
+                    width: 220,
+                    height: 220,
+                    colorDark: '#1a202c',
+                    colorLight: '#ffffff'
+                });
+            }
+            return true;
+        }
+        window.__isStudentCardView = renderStudentCardIfNeeded();
+
         // تهيئة Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDybTBfYneOc5L9Y3suhoFKPdzG--R3oEQ",
@@ -1554,6 +1761,11 @@ let currentSelectedReportWeek = '';
 
         // إخفاء شاشة التحميل الرئيسية بعد تحميل الصفحة
         window.addEventListener('load', function() {
+            // لو الصفحة دي مفتوحة كـ"بطاقة طالب"، مفيش داعي نحمّل بيانات النظام كله
+            if (window.__isStudentCardView) {
+                hideLoading('loadingOverlay');
+                return;
+            }
             setTimeout(() => {
                 hideLoading('loadingOverlay');
                 loadStudents();
@@ -2024,16 +2236,23 @@ let currentSelectedReportWeek = '';
             return cc + digits;
         }
 
-        // توليد رابط صورة QR للطالب (بدون الحاجة لرفعها على Firebase Storage)
-        // ملاحظة: كان الكود يرفع صورة QR على Firebase Storage، لكن قواعد الحماية الافتراضية
-        // تمنع الرفع من تطبيق بدون تسجيل دخول (Authentication)، وهو سبب رسالة الخطأ السابقة.
-        // الحل الأبسط والأضمن: توليد رابط مباشر لصورة QR عبر خدمة عامة، فلا حاجة لأي رفع أو صلاحيات.
-        function getStudentQrImageUrl(student) {
-            // ملحوظة: رابط QR بسيط وسريع بدون رفع أي صورة على أي سيرفر خارجي أو Firebase Storage.
-            // (محاولة سابقة كانت بترفع صورة البطاقة المصممة على Firebase Storage، لكن ده كان بياخد
-            // وقت طويل ويخلي التبويب اللي فتحناه لواتساب يفضل about:blank من غير ما يتم توجيهه.)
+        // توليد رابط "بطاقة الطالب" (بدل رابط صورة QR الخام)
+        // ليه الطريقة دي؟
+        // - قبل كده كان بيتبعت رابط صورة QR مباشر (من خدمة خارجية) بدون أي تصميم أو اسم للطالب أو للخدمة.
+        // - دلوقتي الرابط بيوديه لنفس صفحة النظام، لكن بتصميم بطاقة جميلة فيها اسمه واسم الخدمة وكود الـQR بتاعه.
+        // - كل البيانات (الاسم/المرحلة/الكود) متبعتة جوه الرابط نفسه كـ query params، وكود الـQR بيتولد
+        //   محليًا في المتصفح (بدون رفع أي صورة على Firebase Storage أو أي سيرفر خارجي)، فالصفحة بتفتح
+        //   فورًا للطالب من غير ما يفضل التاب عالق على about:blank.
+        function getStudentCardUrl(student) {
             const code = student.studentCode || student.id;
-            return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(code)}`;
+            const baseUrl = window.location.origin + window.location.pathname;
+            const params = new URLSearchParams({
+                card: '1',
+                name: student.name || '',
+                stage: student.stage || '',
+                code: code || ''
+            });
+            return `${baseUrl}?${params.toString()}`;
         }
 
         // بناء نص الرسالة من القالب
@@ -2063,7 +2282,7 @@ let currentSelectedReportWeek = '';
             const waWindow = window.open('', '_blank');
 
             try {
-                const qrUrl = await getStudentQrImageUrl(student);
+                const qrUrl = await getStudentCardUrl(student);
                 const template = document.getElementById('waMessageTemplate').value;
                 const message = buildWaMessage(template, student, qrUrl);
                 const link = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -2153,7 +2372,7 @@ let currentSelectedReportWeek = '';
                 }
 
                 try {
-                    const qrUrl = await getStudentQrImageUrl(student);
+                    const qrUrl = await getStudentCardUrl(student);
                     const template = document.getElementById('waMessageTemplate').value;
                     const message = buildWaMessage(template, student, qrUrl);
                     const link = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
