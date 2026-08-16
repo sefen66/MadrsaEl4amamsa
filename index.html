@@ -44,7 +44,7 @@
           --glass-bg: rgba(255, 255, 255, 0.1);
         }
         
-      
+        /* تأثيرات زجاجية محسنة */
         .glass-effect {
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
@@ -61,7 +61,7 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
         
-       
+        /* علامات التحميل محسنة */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -169,7 +169,7 @@
           100% { background-position: 0% 50%; }
         }
         
-        
+        /* تحسينات البحث */
         .search-container {
             position: relative;
             margin-bottom: 20px;
@@ -205,7 +205,7 @@
             border-bottom: none;
         }
         
-       
+        /* تحسينات الأقسام */
         .section {
             display: none;
             background: var(--bg-card);
@@ -257,6 +257,7 @@
             border-radius: 3px;
         }
         
+        /* تحسينات البطاقات */
         .stats-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -289,7 +290,7 @@
             opacity: 0.9;
         }
         
-      
+        /* تحسينات الجداول */
         .table-container {
             overflow-x: auto;
             border-radius: 15px;
@@ -298,7 +299,7 @@
             background: var(--bg-card);
         }
         
-       
+        /* بقية الأنماط تبقى كما هي مع تحسينات بسيطة */
         * {
           box-sizing: border-box;
           margin: 0;
@@ -532,7 +533,7 @@
           overflow-x: auto;
         }
         
-        
+        /* تصميم جديد لتبديل الحضور والغياب */
         .attendance-toggle {
           display: flex;
           align-items: center;
@@ -1084,27 +1085,36 @@
             
             <form id="studentForm">
                 <div class="form-group">
-                    <label for="studentName">اسم الطالب الكامل</label>
+                    <label for="studentName">الاسم الثلاثي</label>
                     <input type="text" id="studentName" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="guardianName">اسم ولي الأمر</label>
-                    <input type="text" id="guardianName" required>
+                    <label for="studentPhone">رقم الهاتف</label>
+                    <input type="tel" id="studentPhone" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="studentPhone">رقم هاتف الطالب </label>
-                    <input type="tel" id="studentPhone">
+                    <label for="studentStage">المرحلة</label>
+                    <select id="studentStage" required>
+                        <option value="">-- اختر المرحلة --</option>
+                        <option value="أولى">أولى</option>
+                        <option value="ثانية">ثانية</option>
+                        <option value="ثالثة">ثالثة</option>
+                        <option value="رابعة">رابعة</option>
+                        <option value="خامسة">خامسة</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="fatherPhone">رقم هاتف الاب </label>
-                    <input type="tel" id="fatherPhone" required>
+                    <label for="confessionFather">أب الاعتراف</label>
+                    <input type="text" id="confessionFather" required>
                 </div>
-           
                 
-
+                <div class="form-group">
+                    <label for="confessionFatherPhone">رقم هاتف الأب (اختياري)</label>
+                    <input type="tel" id="confessionFatherPhone">
+                </div>
                 
                 <button type="submit" class="btn" id="addStudentBtn">
                     <span id="addStudentText">إضافة الطالب</span>
@@ -1123,11 +1133,11 @@
                         <thead>
                             <tr>
                                 <th>معرف الطالب (ID)</th>
-                                <th>الاسم</th>
-                                <th>ولي الأمر</th>
-                                <th>هاتف الطالب</th>
+                                <th>الاسم الثلاثي</th>
+                                <th>رقم الهاتف</th>
+                                <th>المرحلة</th>
+                                <th>أب الاعتراف</th>
                                 <th>هاتف الأب</th>
-                                <th>هاتف الأم</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -1457,10 +1467,10 @@ let currentSelectedReportWeek = '';
             e.preventDefault();
             
             const studentName = document.getElementById('studentName').value;
-            const guardianName = document.getElementById('guardianName').value;
             const studentPhone = document.getElementById('studentPhone').value;
-            const fatherPhone = document.getElementById('fatherPhone').value;
-            const motherPhone = document.getElementById('motherPhone').value;
+            const studentStage = document.getElementById('studentStage').value;
+            const confessionFather = document.getElementById('confessionFather').value;
+            const confessionFatherPhone = document.getElementById('confessionFatherPhone').value;
             
             showButtonLoading('addStudentBtn', 'addStudentText', 'addStudentLoading');
             
@@ -1470,10 +1480,10 @@ let currentSelectedReportWeek = '';
             db.collection('students').doc(newStudentId).set({
                 studentCode: newStudentId,
                 name: studentName,
-                guardian: guardianName,
                 studentPhone: studentPhone,
-                fatherPhone: fatherPhone,
-                motherPhone: motherPhone,
+                stage: studentStage,
+                confessionFather: confessionFather,
+                confessionFatherPhone: confessionFatherPhone,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
@@ -1509,10 +1519,10 @@ let currentSelectedReportWeek = '';
                     row.innerHTML = `
                         <td><span class="student-id-badge">${student.studentCode || student.id}</span></td>
                         <td>${student.name}</td>
-                        <td>${student.guardian}</td>
                         <td>${student.studentPhone || 'غير متوفر'}</td>
-                        <td>${student.fatherPhone}</td>
-                        <td>${student.motherPhone}</td>
+                        <td>${student.stage || 'غير محدد'}</td>
+                        <td>${student.confessionFather || 'غير متوفر'}</td>
+                        <td>${student.confessionFatherPhone || 'غير متوفر'}</td>
                         <td class="action-buttons">
                             <button class="btn btn-qr" onclick="showIdCard('${student.id}')"><i class="fas fa-qrcode"></i> QR</button>
                             <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
@@ -2067,14 +2077,14 @@ function loadAttendanceForWeek(weekId) {
             suggestionsContainer.innerHTML = '';
             
             const filteredStudents = students.filter(student => 
-                student.name.includes(query) || student.guardian.includes(query)
+                student.name.includes(query) || (student.confessionFather || '').includes(query)
             );
             
             if (filteredStudents.length > 0) {
                 filteredStudents.forEach(student => {
                     const suggestion = document.createElement('div');
                     suggestion.className = 'search-suggestion';
-                    suggestion.textContent = `${student.name} - ${student.guardian}`;
+                    suggestion.textContent = `${student.name} - ${student.stage || ''}`;
                     suggestion.addEventListener('click', function() {
                         document.getElementById('searchInput').value = student.name;
                         hideSearchSuggestions();
@@ -2106,7 +2116,7 @@ function loadAttendanceForWeek(weekId) {
             
             // البحث في الطلاب
             const filteredStudents = students.filter(student => 
-                student.name.includes(query) || student.guardian.includes(query)
+                student.name.includes(query) || (student.confessionFather || '').includes(query)
             );
             
             hideLoading('searchLoading');
@@ -2118,10 +2128,10 @@ function loadAttendanceForWeek(weekId) {
                     resultsHTML += `
                         <div class="card">
                             <div class="card-title">${student.name}</div>
-                            <div class="card-detail"><strong>ولي الأمر:</strong> ${student.guardian}</div>
-                            <div class="card-detail"><strong>هاتف الطالب:</strong> ${student.studentPhone || 'غير متوفر'}</div>
-                            <div class="card-detail"><strong>هاتف الأب:</strong> ${student.fatherPhone}</div>
-                            <div class="card-detail"><strong>هاتف الأم:</strong> ${student.motherPhone}</div>
+                            <div class="card-detail"><strong>المرحلة:</strong> ${student.stage || 'غير محدد'}</div>
+                            <div class="card-detail"><strong>رقم الهاتف:</strong> ${student.studentPhone || 'غير متوفر'}</div>
+                            <div class="card-detail"><strong>أب الاعتراف:</strong> ${student.confessionFather || 'غير متوفر'}</div>
+                            <div class="card-detail"><strong>هاتف الأب:</strong> ${student.confessionFatherPhone || 'غير متوفر'}</div>
                         </div>
                     `;
                 });
@@ -2259,10 +2269,11 @@ function generateReport(weekId) {
                 // تجميع بيانات الصف لاستخدامها لاحقًا في التصدير لإكسل
                 currentReportRows.push({
                     'معرف الطالب': student.studentCode || student.id,
-                    'اسم الطالب': student.name,
-                    'ولي الأمر': student.guardian || '',
-                    'هاتف الأب': student.fatherPhone || '',
-                    'هاتف الأم': student.motherPhone || '',
+                    'الاسم الثلاثي': student.name,
+                    'رقم الهاتف': student.studentPhone || '',
+                    'المرحلة': student.stage || '',
+                    'أب الاعتراف': student.confessionFather || '',
+                    'هاتف الأب': student.confessionFatherPhone || '',
                     'الحالة': isPresent ? 'حاضر' : 'غائب'
                 });
             });
@@ -2305,10 +2316,11 @@ function generateReport(weekId) {
             const detailsSheet = XLSX.utils.json_to_sheet(currentReportRows);
             detailsSheet['!cols'] = [
                 { wch: 20 }, // معرف الطالب
-                { wch: 25 }, // اسم الطالب
-                { wch: 20 }, // ولي الأمر
+                { wch: 25 }, // الاسم الثلاثي
+                { wch: 15 }, // رقم الهاتف
+                { wch: 12 }, // المرحلة
+                { wch: 20 }, // أب الاعتراف
                 { wch: 15 }, // هاتف الأب
-                { wch: 15 }, // هاتف الأم
                 { wch: 10 }  // الحالة
             ];
 
