@@ -1518,7 +1518,7 @@
             <div class="student-card-code" id="cardStudentCode"></div>
             <p class="student-card-hint">
                 ده كود الـ QR الخاص بيك لتسجيل الحضور 🙏<br>
-                خد له سكرين شوت واحتفظ بيه، وهاته كل مرة تيجي فيها.
+                خد له سكرين شوت واحتفظ بيه، وابعته كل مرة تيجي فيها.
             </p>
             <div class="student-card-footer">خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</div>
         </div>
@@ -3044,13 +3044,18 @@ if (attendanceSearchInputEl) {
         let lastScannedCode = null;
         let lastScannedTime = 0;
 
-        document.getElementById('openScannerBtn').addEventListener('click', function() {
-            if (!currentAttendanceWeekId) {
-                alert('يرجى اختيار الأسبوع أولاً قبل بدء تسجيل الحضور بالكاميرا.');
-                return;
-            }
-            openScannerModal();
-        });
+document.getElementById('openScannerBtn').addEventListener('click', function() {
+
+    // تفعيل الصوت من تفاعل المستخدم
+    initScanConfirmAudio();
+
+    if (!currentAttendanceWeekId) {
+        alert('يرجى اختيار الأسبوع أولاً قبل بدء تسجيل الحضور بالكاميرا.');
+        return;
+    }
+
+    openScannerModal();
+});
 
         function openScannerModal() {
             lastScannedCode = null;
@@ -3089,60 +3094,80 @@ if (attendanceSearchInputEl) {
         // النغمة بيتم توليدها مباشرة بالمتصفح (Web Audio API) بدل الاعتماد على ملف صوت خارجي،
         // عشان تشتغل فورًا على أي جهاز من غير ما نحتاج نرفع أي ملف إضافي مع الموقع.
         let scanConfirmAudioCtx = null;
-        function playScanConfirmSound() {
-            try {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (!scanConfirmAudioCtx) {
-                    scanConfirmAudioCtx = new AudioContextClass();
-                }
-                if (scanConfirmAudioCtx.state === 'suspended') {
-                    scanConfirmAudioCtx.resume();
-                }
-                const ctx = scanConfirmAudioCtx;
-                const startTime = ctx.currentTime;
 
-                // نقرة قصيرة في البداية (زي صوت "تاتش" كارت الدفع)
-                const clickDuration = 0.045;
-                const bufferSize = Math.floor(ctx.sampleRate * clickDuration);
-                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-                const noiseData = noiseBuffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    noiseData[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-                }
-                const noiseSource = ctx.createBufferSource();
-                noiseSource.buffer = noiseBuffer;
-                const noiseFilter = ctx.createBiquadFilter();
-                noiseFilter.type = 'highpass';
-                noiseFilter.frequency.value = 3000;
-                const noiseGain = ctx.createGain();
-                noiseGain.gain.setValueAtTime(0.22, startTime);
-                noiseSource.connect(noiseFilter);
-                noiseFilter.connect(noiseGain);
-                noiseGain.connect(ctx.destination);
-                noiseSource.start(startTime);
-                noiseSource.stop(startTime + clickDuration);
+function initScanConfirmAudio() {
+    try {
+        const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
 
-                // نغمتان لامعتان متصاعدتان بعد النقرة، زي صوت تأكيد الدفع الإلكتروني
-                [[987.77, 0.05, 0.28], [1318.51, 0.15, 0.4]].forEach(([frequency, delay, duration]) => {
-                    const oscillator = ctx.createOscillator();
-                    const gainNode = ctx.createGain();
-                    oscillator.type = 'sine';
-                    oscillator.frequency.value = frequency;
-                    oscillator.connect(gainNode);
-                    gainNode.connect(ctx.destination);
-
-                    const tStart = startTime + delay;
-                    gainNode.gain.setValueAtTime(0, tStart);
-                    gainNode.gain.linearRampToValueAtTime(0.32, tStart + 0.015);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, tStart + duration);
-
-                    oscillator.start(tStart);
-                    oscillator.stop(tStart + duration + 0.02);
-                });
-            } catch (error) {
-                console.error('تعذر تشغيل نغمة التأكيد:', error);
-            }
+        if (!AudioContextClass) {
+            console.warn('Web Audio API غير مدعومة في هذا المتصفح');
+            return;
         }
+
+        if (!scanConfirmAudioCtx) {
+            scanConfirmAudioCtx = new AudioContextClass();
+        }
+
+        if (scanConfirmAudioCtx.state === 'suspended') {
+            scanConfirmAudioCtx.resume();
+        }
+    } catch (error) {
+        console.error('تعذر تفعيل الصوت:', error);
+    }
+}
+
+function playScanConfirmSound() {
+    try {
+        initScanConfirmAudio();
+
+        if (!scanConfirmAudioCtx) return;
+
+        const ctx = scanConfirmAudioCtx;
+
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+
+        const startTime = ctx.currentTime;
+
+        // نغمة تأكيد قصيرة
+        [987.77, 1318.51].forEach(([frequency, delay, duration]) => {
+            // سيتم استبدالها بالصيغة أدناه
+        });
+
+        [[987.77, 0.05, 0.28], [1318.51, 0.15, 0.4]]
+            .forEach(([frequency, delay, duration]) => {
+
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.value = frequency;
+
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+
+                const tStart = startTime + delay;
+
+                gainNode.gain.setValueAtTime(0.001, tStart);
+                gainNode.gain.linearRampToValueAtTime(
+                    0.32,
+                    tStart + 0.015
+                );
+                gainNode.gain.exponentialRampToValueAtTime(
+                    0.001,
+                    tStart + duration
+                );
+
+                oscillator.start(tStart);
+                oscillator.stop(tStart + duration + 0.03);
+            });
+
+    } catch (error) {
+        console.error('تعذر تشغيل نغمة التأكيد:', error);
+    }
+}
 
         // عند نجاح مسح كود QR
         function onQrScanSuccess(decodedText) {
