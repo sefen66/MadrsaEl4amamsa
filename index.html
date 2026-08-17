@@ -2746,7 +2746,7 @@ function loadAttendanceForWeek(weekId) {
             // إنشاء جدول الحضور فقط عند اختيار الأسبوع
             studentsSnapshot.forEach(doc => {
                 const student = { id: doc.id, ...doc.data() };
-                const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
+                const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : false;
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -2876,13 +2876,38 @@ function loadAttendanceForWeek(weekId) {
             }
         }
 
-        // تشغيل نغمة ترن لتأكيد نجاح تسجيل حضور الطالب بعد مسح كود QR
-        const scanConfirmAudio = new Audio('ring.wav');
+        // تشغيل نغمة لتأكيد نجاح تسجيل حضور الطالب بعد مسح كود QR
+        // النغمة بيتم توليدها مباشرة بالمتصفح (Web Audio API) بدل الاعتماد على ملف صوت خارجي،
+        // عشان تشتغل فورًا على أي جهاز من غير ما نحتاج نرفع أي ملف إضافي مع الموقع.
+        let scanConfirmAudioCtx = null;
         function playScanConfirmSound() {
             try {
-                scanConfirmAudio.currentTime = 0;
-                scanConfirmAudio.play().catch(error => {
-                    console.error('تعذر تشغيل نغمة التأكيد:', error);
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!scanConfirmAudioCtx) {
+                    scanConfirmAudioCtx = new AudioContextClass();
+                }
+                if (scanConfirmAudioCtx.state === 'suspended') {
+                    scanConfirmAudioCtx.resume();
+                }
+                const ctx = scanConfirmAudioCtx;
+                const startTime = ctx.currentTime;
+
+                // نغمتين متتاليتين (دينج-دونج) بنبرة مبهجة تأكيدًا للنجاح
+                [[880, 0], [1175, 0.12]].forEach(([frequency, delay]) => {
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = frequency;
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    const tStart = startTime + delay;
+                    gainNode.gain.setValueAtTime(0, tStart);
+                    gainNode.gain.linearRampToValueAtTime(0.35, tStart + 0.02);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, tStart + 0.22);
+
+                    oscillator.start(tStart);
+                    oscillator.stop(tStart + 0.25);
                 });
             } catch (error) {
                 console.error('تعذر تشغيل نغمة التأكيد:', error);
@@ -3062,68 +3087,32 @@ function generateReport(weekId) {
     db.collection('attendance').where('weekId', '==', weekId).get()
     .then(attendanceSnapshot => {
         const attendanceData = {};
-        let presentCount = 0;
-        let absentCount = 0;
         
         attendanceSnapshot.forEach(doc => {
             const data = doc.data();
             attendanceData[data.studentId] = data.present;
-            
-            if (data.present) {
-                presentCount++;
-            } else {
-                absentCount++;
-            }
         });
         
-        // حساب النسب المئوية
-        const totalCount = presentCount + absentCount;
-        const presentPercentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
-        const absentPercentage = totalCount > 0 ? Math.round((absentCount / totalCount) * 100) : 0;
-        
-        // إنشاء التقرير فقط عند اختيار الأسبوع
-        let reportHTML = `
-            <div class="stats-cards">
-                <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
-                    <div class="stat-number">${presentCount}</div>
-                    <div class="stat-label">عدد الحاضرين</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                    <div class="stat-number">${absentCount}</div>
-                    <div class="stat-label">عدد الغائبين</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
-                    <div class="stat-number">${presentPercentage}%</div>
-                    <div class="stat-label">نسبة الحضور</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-                    <div class="stat-number">${absentPercentage}%</div>
-                    <div class="stat-label">نسبة الغياب</div>
-                </div>
-            </div>
-            
-            <h3>تفاصيل الغياب</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>اسم الطالب</th>
-                            <th>الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        currentReportRows = [];
-        
-        // تحميل أسماء الطلاب فقط عند اختيار الأسبوع
+        // تحميل كل الطلاب عشان نحسب الحاضر والغائب بناءً على القائمة كاملة
+        // (أي طالب لسه محدش سجله حاضر بيتحسب غائب تلقائيًا)
         db.collection('students').get()
         .then(studentsSnapshot => {
+            let presentCount = 0;
+            let absentCount = 0;
+            let rowsHTML = '';
+            currentReportRows = [];
+
             studentsSnapshot.forEach(doc => {
                 const student = { id: doc.id, ...doc.data() };
-                const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : true;
-                
-                reportHTML += `
+                const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : false;
+
+                if (isPresent) {
+                    presentCount++;
+                } else {
+                    absentCount++;
+                }
+
+                rowsHTML += `
                     <tr>
                         <td>${student.name}</td>
                         <td>
@@ -3145,13 +3134,48 @@ function generateReport(weekId) {
                     'الحالة': isPresent ? 'حاضر' : 'غائب'
                 });
             });
-            
-            reportHTML += `
-                    </tbody>
-                </table>
-            </div>
+
+            // حساب النسب المئوية بناءً على القائمة كاملة
+            const totalCount = presentCount + absentCount;
+            const presentPercentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+            const absentPercentage = totalCount > 0 ? Math.round((absentCount / totalCount) * 100) : 0;
+
+            const reportHTML = `
+                <div class="stats-cards">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                        <div class="stat-number">${presentCount}</div>
+                        <div class="stat-label">عدد الحاضرين</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        <div class="stat-number">${absentCount}</div>
+                        <div class="stat-label">عدد الغائبين</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                        <div class="stat-number">${presentPercentage}%</div>
+                        <div class="stat-label">نسبة الحضور</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                        <div class="stat-number">${absentPercentage}%</div>
+                        <div class="stat-label">نسبة الغياب</div>
+                    </div>
+                </div>
+                
+                <h3>تفاصيل الغياب</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم الطالب</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHTML}
+                        </tbody>
+                    </table>
+                </div>
             `;
-            
+
             currentReportSummary = { presentCount, absentCount, presentPercentage, absentPercentage };
             
             document.getElementById('reportResults').innerHTML = reportHTML;
