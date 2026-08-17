@@ -2892,8 +2892,29 @@ function loadAttendanceForWeek(weekId) {
                 const ctx = scanConfirmAudioCtx;
                 const startTime = ctx.currentTime;
 
-                // نغمتين متتاليتين (دينج-دونج) بنبرة مبهجة تأكيدًا للنجاح
-                [[880, 0], [1175, 0.12]].forEach(([frequency, delay]) => {
+                // نقرة قصيرة في البداية (زي صوت "تاتش" كارت الدفع)
+                const clickDuration = 0.045;
+                const bufferSize = Math.floor(ctx.sampleRate * clickDuration);
+                const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const noiseData = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    noiseData[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+                }
+                const noiseSource = ctx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 3000;
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.22, startTime);
+                noiseSource.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                noiseSource.start(startTime);
+                noiseSource.stop(startTime + clickDuration);
+
+                // نغمتان لامعتان متصاعدتان بعد النقرة، زي صوت تأكيد الدفع الإلكتروني
+                [[987.77, 0.05, 0.28], [1318.51, 0.15, 0.4]].forEach(([frequency, delay, duration]) => {
                     const oscillator = ctx.createOscillator();
                     const gainNode = ctx.createGain();
                     oscillator.type = 'sine';
@@ -2903,11 +2924,11 @@ function loadAttendanceForWeek(weekId) {
 
                     const tStart = startTime + delay;
                     gainNode.gain.setValueAtTime(0, tStart);
-                    gainNode.gain.linearRampToValueAtTime(0.35, tStart + 0.02);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, tStart + 0.22);
+                    gainNode.gain.linearRampToValueAtTime(0.32, tStart + 0.015);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, tStart + duration);
 
                     oscillator.start(tStart);
-                    oscillator.stop(tStart + 0.25);
+                    oscillator.stop(tStart + duration + 0.02);
                 });
             } catch (error) {
                 console.error('تعذر تشغيل نغمة التأكيد:', error);
