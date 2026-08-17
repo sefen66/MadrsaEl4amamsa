@@ -773,6 +773,71 @@
         .attendance-table {
           overflow-x: auto;
         }
+
+        /* خانة البحث الفوري فوق جدول تسجيل الحضور */
+        .attendance-search-box {
+          position: relative;
+          max-width: 340px;
+          margin-bottom: 16px;
+        }
+
+        .attendance-search-box input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 10px 40px 10px 14px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.05);
+          color: var(--text);
+          font-family: 'Tajawal', sans-serif;
+          font-size: 14px;
+        }
+
+        .attendance-search-box input:focus {
+          outline: none;
+          border-color: var(--primary);
+        }
+
+        .attendance-search-box i {
+          position: absolute;
+          top: 50%;
+          right: 14px;
+          transform: translateY(-50%);
+          color: var(--text-light);
+          pointer-events: none;
+        }
+
+        .attendance-no-results {
+          text-align: center;
+          color: var(--text-light);
+          padding: 18px;
+          font-size: 14px;
+        }
+
+        /* مؤشر الحفظ التلقائي بجانب كل طالب */
+        .save-indicator {
+          font-size: 12px;
+          margin-right: 6px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          white-space: nowrap;
+        }
+
+        .save-indicator.show {
+          opacity: 1;
+        }
+
+        .save-indicator.saved {
+          color: var(--success, #2ecc71);
+        }
+
+        .save-indicator.saving {
+          color: var(--text-light);
+        }
+
+        .save-indicator.error {
+          color: var(--accent, #e74c3c);
+        }
         
         /* تصميم جديد لتبديل الحضور والغياب */
         .attendance-toggle {
@@ -1416,7 +1481,7 @@
             <div class="student-card-code" id="cardStudentCode"></div>
             <p class="student-card-hint">
                 ده كود الـ QR الخاص بيك لتسجيل الحضور 🙏<br>
-                خد له سكرين شوت واحتفظ بيه، وابعته كل مرة تيجي فيها.
+                خد له سكرين شوت واحتفظ بية😍.
             </p>
             <div class="student-card-footer">خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</div>
         </div>
@@ -1617,6 +1682,12 @@
             
             <div id="attendanceTableContainer" class="attendance-table" style="display: none;">
                 <h3>سجل حضور وغياب الطلاب</h3>
+
+                <div class="attendance-search-box">
+                    <input type="text" id="attendanceSearchInput" placeholder="ابحث عن طالب بالاسم...">
+                    <i class="fas fa-search"></i>
+                </div>
+
                 <div class="table-container">
                     <table>
                         <thead>
@@ -1629,12 +1700,10 @@
                             <!-- سيتم ملء هذا الجدول بالبيانات من Firebase -->
                         </tbody>
                     </table>
+                    <div id="attendanceNoResults" class="attendance-no-results" style="display: none;">
+                        لا يوجد طالب مطابق للبحث.
+                    </div>
                 </div>
-                
-                <button id="saveAttendance" class="btn btn-success" style="margin-top: 20px;">
-                    <span id="saveAttendanceText">حفظ التسجيل</span>
-                    <div id="saveAttendanceLoading" class="loading-small" style="display: none;"></div>
-                </button>
             </div>
         </section>
 
@@ -2749,6 +2818,7 @@ function loadAttendanceForWeek(weekId) {
                 const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : false;
                 
                 const row = document.createElement('tr');
+                row.setAttribute('data-student-name', student.name || '');
                 row.innerHTML = `
                     <td>${student.name}</td>
                     <td class="attendance-toggle">
@@ -2759,6 +2829,7 @@ function loadAttendanceForWeek(weekId) {
                         <span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">
                             ${isPresent ? 'حاضر' : 'غائب'}
                         </span>
+                        <span class="save-indicator" id="saveIndicator-${student.id}"></span>
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -2766,6 +2837,13 @@ function loadAttendanceForWeek(weekId) {
             
             hideLoading('attendanceLoading');
             showTable('attendanceTableContainer');
+
+            // إعادة ضبط خانة البحث وإظهار كل الصفوف عند تحميل أسبوع جديد
+            const searchInput = document.getElementById('attendanceSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            filterAttendanceTable('');
         })
         .catch(error => {
             console.error('خطأ في تحميل بيانات الحضور:', error);
@@ -2779,6 +2857,36 @@ function loadAttendanceForWeek(weekId) {
         alert('حدث خطأ أثناء تحميل بيانات الطلاب.');
     });
 }
+
+// فلترة فورية لجدول تسجيل الحضور بالاسم أثناء الكتابة
+function filterAttendanceTable(query) {
+    const tableBody = document.getElementById('attendanceTableBody');
+    const noResultsBox = document.getElementById('attendanceNoResults');
+    if (!tableBody) return;
+
+    const normalizedQuery = (query || '').trim().toLowerCase();
+    const rows = tableBody.querySelectorAll('tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const name = (row.getAttribute('data-student-name') || '').toLowerCase();
+        const isMatch = normalizedQuery === '' || name.includes(normalizedQuery);
+        row.style.display = isMatch ? '' : 'none';
+        if (isMatch) visibleCount++;
+    });
+
+    if (noResultsBox) {
+        noResultsBox.style.display = (visibleCount === 0 && rows.length > 0) ? 'block' : 'none';
+    }
+}
+
+// ربط خانة البحث بالفلترة الفورية (مرة واحدة فقط)
+const attendanceSearchInputEl = document.getElementById('attendanceSearchInput');
+if (attendanceSearchInputEl) {
+    attendanceSearchInputEl.addEventListener('input', function() {
+        filterAttendanceTable(this.value);
+    });
+}
     
         // تبديل حالة الحضور
         function toggleAttendance(studentId, weekId, isPresent) {
@@ -2790,21 +2898,30 @@ function loadAttendanceForWeek(weekId) {
                 statusElement.textContent = isPresent ? 'حاضر' : 'غائب';
                 statusElement.className = `attendance-status ${isPresent ? 'status-present' : 'status-absent'}`;
             }
+
+            // إظهار مؤشر "جاري الحفظ..." بجانب الطالب فورًا
+            const indicatorEl = document.getElementById(`saveIndicator-${studentId}`);
+            if (indicatorEl) {
+                indicatorEl.textContent = 'جاري الحفظ...';
+                indicatorEl.className = 'save-indicator saving show';
+            }
             
-            // حفظ البيانات في Firebase
+            // حفظ البيانات في Firebase تلقائيًا فور تغيير حالة الطالب
             db.collection('attendance').where('studentId', '==', studentId).where('weekId', '==', weekId).get()
             .then(querySnapshot => {
                 if (!querySnapshot.empty) {
                     // تحديث السجل الموجود
+                    const updatePromises = [];
                     querySnapshot.forEach(doc => {
-                        db.collection('attendance').doc(doc.id).update({
+                        updatePromises.push(db.collection('attendance').doc(doc.id).update({
                             present: isPresent,
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                        }));
                     });
+                    return Promise.all(updatePromises);
                 } else {
                     // إنشاء سجل جديد
-                    db.collection('attendance').add({
+                    return db.collection('attendance').add({
                         studentId: studentId,
                         weekId: weekId,
                         present: isPresent,
@@ -2812,22 +2929,26 @@ function loadAttendanceForWeek(weekId) {
                     });
                 }
             })
+            .then(() => {
+                if (indicatorEl) {
+                    indicatorEl.textContent = '✓ تم الحفظ';
+                    indicatorEl.className = 'save-indicator saved show';
+                    setTimeout(() => {
+                        indicatorEl.classList.remove('show');
+                    }, 1800);
+                }
+            })
             .catch(error => {
                 console.error('خطأ في تحديث الحضور:', error);
+                if (indicatorEl) {
+                    indicatorEl.textContent = '⚠ فشل الحفظ';
+                    indicatorEl.className = 'save-indicator error show';
+                }
                 alert('حدث خطأ أثناء تحديث حالة الحضور.');
             });
         }
-    
-        // حفظ تسجيل الحضور
-        document.getElementById('saveAttendance').addEventListener('click', function() {
-            showButtonLoading('saveAttendance', 'saveAttendanceText', 'saveAttendanceLoading');
-            
-            // إظهار رسالة نجاح بعد حفظ البيانات
-            setTimeout(() => {
-                hideButtonLoading('saveAttendance', 'saveAttendanceText', 'saveAttendanceLoading');
-                alert('تم حفظ تسجيلات الحضور بنجاح!');
-            }, 1000);
-        });
+        // ملحوظة: تم حذف زرار "حفظ التسجيل" القديم لأنه كان شكليًا فقط ولا يحفظ أي شيء —
+        // كل تبديل لحالة حضور الطالب بيتحفظ في Firebase فورًا وتلقائيًا (شوف toggleAttendance فوق).
 
         // -------------------------
         // 📌 5.1) تسجيل الحضور عبر مسح QR بكاميرا الهاتف
