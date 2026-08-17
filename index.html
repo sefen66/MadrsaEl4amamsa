@@ -317,8 +317,38 @@
         /* -------------------------
            شاشة تسجيل الدخول (الأدمن فقط)
            ------------------------- */
-        body.auth-locked > *:not(#loginScreen):not(#studentCardView):not(#loadingOverlay) {
+        body.auth-locked > *:not(#loginScreen):not(#studentCardView):not(#loadingOverlay):not(#connectionBanner) {
             display: none !important;
+        }
+
+        /* شريط حالة الاتصال بالإنترنت */
+        .connection-banner {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 7000;
+            text-align: center;
+            padding: 10px 16px;
+            font-size: 13.5px;
+            font-weight: 600;
+            font-family: 'Tajawal', sans-serif;
+            direction: rtl;
+        }
+
+        .connection-banner.show {
+            display: block;
+        }
+
+        .connection-banner.offline {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        .connection-banner.online {
+            background: #27ae60;
+            color: #fff;
         }
 
         .login-screen {
@@ -837,6 +867,10 @@
 
         .save-indicator.error {
           color: var(--accent, #e74c3c);
+        }
+
+        .save-indicator.offline {
+          color: #f39c12;
         }
         
         /* تصميم جديد لتبديل الحضور والغياب */
@@ -1439,6 +1473,9 @@
     </style>
 </head>
 <body class="auth-locked">
+    <!-- شريط تنبيه حالة الاتصال بالإنترنت -->
+    <div id="connectionBanner" class="connection-banner"></div>
+
     <!-- شاشة تسجيل دخول الأدمن -->
     <div id="loginScreen" class="login-screen">
         <div class="login-box glass-card">
@@ -1481,7 +1518,7 @@
             <div class="student-card-code" id="cardStudentCode"></div>
             <p class="student-card-hint">
                 ده كود الـ QR الخاص بيك لتسجيل الحضور 🙏<br>
-                خد له سكرين شوت واحتفظ بية😍.
+                خد له سكرين شوت واحتفظ بيه، وهاته كل مرة تيجي فيها.
             </p>
             <div class="student-card-footer">خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</div>
         </div>
@@ -1894,6 +1931,47 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
         const auth = firebase.auth();
+
+        // -------------------------
+        // 📌 0.2) العمل بدون إنترنت (Offline Persistence)
+        // -------------------------
+        // بتخلي Firestore يحفظ نسخة من البيانات على الجهاز نفسه، فلو النت قطع مؤقتًا:
+        // - الصفحات اللي فاتحها قبل كده (الطلاب، الأسابيع، الحضور) هتفضل شغالة من النسخة المحفوظة
+        // - أي تغيير (تسجيل حضور/غياب) بيتحفظ محليًا فورًا، وبيترفع تلقائيًا لما النت يرجع من غير ما تعمل حاجة
+        if (!firebaseInitError) {
+            try {
+                db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+                    if (err.code === 'failed-precondition') {
+                        console.warn('تعذر تفعيل العمل بدون إنترنت: النظام مفتوح في أكتر من تبويب في نفس الوقت.');
+                    } else if (err.code === 'unimplemented') {
+                        console.warn('المتصفح ده مش بيدعم العمل بدون إنترنت.');
+                    } else {
+                        console.error('خطأ في تفعيل العمل بدون إنترنت:', err);
+                    }
+                });
+            } catch (e) {
+                console.error('تعذر تفعيل العمل بدون إنترنت:', e);
+            }
+        }
+
+        // شريط تنبيه أعلى الصفحة يوضح حالة الاتصال بالإنترنت
+        function updateConnectionBanner(isOnline) {
+            const banner = document.getElementById('connectionBanner');
+            if (!banner) return;
+            if (isOnline) {
+                banner.textContent = '🟢 تم الاتصال بالإنترنت، جاري مزامنة أي تغييرات محفوظة محليًا...';
+                banner.className = 'connection-banner online show';
+                setTimeout(() => banner.classList.remove('show'), 3500);
+            } else {
+                banner.textContent = '🔴 غير متصل بالإنترنت — أي تسجيل حضور هيتحفظ على الجهاز وهيترفع تلقائيًا لما النت يرجع';
+                banner.className = 'connection-banner offline show';
+            }
+        }
+        window.addEventListener('online', function() { updateConnectionBanner(true); });
+        window.addEventListener('offline', function() { updateConnectionBanner(false); });
+        if (!navigator.onLine) {
+            updateConnectionBanner(false);
+        }
 
         // -------------------------
         // 📌 0.1) تسجيل دخول الأدمن (Firebase Authentication حقيقي)
@@ -2899,14 +2977,20 @@ if (attendanceSearchInputEl) {
                 statusElement.className = `attendance-status ${isPresent ? 'status-present' : 'status-absent'}`;
             }
 
-            // إظهار مؤشر "جاري الحفظ..." بجانب الطالب فورًا
+            // إظهار مؤشر مناسب بجانب الطالب فورًا حسب حالة الاتصال بالإنترنت
             const indicatorEl = document.getElementById(`saveIndicator-${studentId}`);
             if (indicatorEl) {
-                indicatorEl.textContent = 'جاري الحفظ...';
-                indicatorEl.className = 'save-indicator saving show';
+                if (navigator.onLine) {
+                    indicatorEl.textContent = 'جاري الحفظ...';
+                    indicatorEl.className = 'save-indicator saving show';
+                } else {
+                    indicatorEl.textContent = '📥 محفوظ محليًا، هيترفع لما النت يرجع';
+                    indicatorEl.className = 'save-indicator offline show';
+                }
             }
             
             // حفظ البيانات في Firebase تلقائيًا فور تغيير حالة الطالب
+            // (لو مفيش إنترنت، Firestore بيحفظ التغيير محليًا على الجهاز ويترفع تلقائيًا لما النت يرجع)
             db.collection('attendance').where('studentId', '==', studentId).where('weekId', '==', weekId).get()
             .then(querySnapshot => {
                 if (!querySnapshot.empty) {
@@ -2930,6 +3014,7 @@ if (attendanceSearchInputEl) {
                 }
             })
             .then(() => {
+                // ده بيحصل فعليًا بس لما التغيير يوصل السيرفر فعلًا (سواء فورًا أو بعد ما النت يرجع)
                 if (indicatorEl) {
                     indicatorEl.textContent = '✓ تم الحفظ';
                     indicatorEl.className = 'save-indicator saved show';
@@ -2944,7 +3029,10 @@ if (attendanceSearchInputEl) {
                     indicatorEl.textContent = '⚠ فشل الحفظ';
                     indicatorEl.className = 'save-indicator error show';
                 }
-                alert('حدث خطأ أثناء تحديث حالة الحضور.');
+                // لو السبب مجرد إن النت مقطوع، مفيش داعي لرسالة تنبيه مخيفة، لأن التغيير محفوظ محليًا وهيترفع لوحده
+                if (navigator.onLine) {
+                    alert('حدث خطأ أثناء تحديث حالة الحضور.');
+                }
             });
         }
         // ملحوظة: تم حذف زرار "حفظ التسجيل" القديم لأنه كان شكليًا فقط ولا يحفظ أي شيء —
