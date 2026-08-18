@@ -351,6 +351,91 @@
             color: #fff;
         }
 
+        /* -------------------------
+           قسم إرسال واتساب التلقائي (ربط رقم احتياطي عبر QR)
+           ------------------------- */
+        .wa-auto-warning {
+            background: rgba(243, 156, 18, 0.12);
+            border: 1px solid #f39c12;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 13.5px;
+            line-height: 1.9;
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .wa-auto-settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .wa-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .wa-status-badge.connected {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+        }
+
+        .wa-status-badge.disconnected,
+        .wa-status-badge.auth_failure {
+            background: rgba(231, 76, 60, 0.15);
+            color: #e74c3c;
+        }
+
+        .wa-status-badge.qr,
+        .wa-status-badge.initializing {
+            background: rgba(243, 156, 18, 0.15);
+            color: #f39c12;
+        }
+
+        .wa-qr-box {
+            display: none;
+            text-align: center;
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 280px;
+            margin: 16px auto;
+        }
+
+        .wa-qr-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .wa-auto-progress {
+            display: none;
+            margin-top: 18px;
+        }
+
+        .wa-auto-progress-bar {
+            width: 100%;
+            height: 10px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .wa-auto-progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         .login-screen {
             display: none;
             position: fixed;
@@ -1555,6 +1640,7 @@
                 <li><a href="#" class="nav-link" data-section="weeks"><i class="fas fa-calendar-week"></i><span>إدارة الأسابيع</span></a></li>
                 <li><a href="#" class="nav-link" data-section="attendance"><i class="fas fa-clipboard-check"></i><span>تسجيل الغياب</span></a></li>
                 <li><a href="#" class="nav-link" data-section="qrcodes"><i class="fas fa-qrcode"></i><span>أكواد QR وواتساب</span></a></li>
+                <li><a href="#" class="nav-link" data-section="waAuto"><i class="fas fa-robot"></i><span>إرسال واتساب تلقائي</span></a></li>
                 <li><a href="#" class="nav-link" data-section="search"><i class="fas fa-search"></i><span>البحث عن طالب</span></a></li>
                 <li><a href="#" class="nav-link" data-section="reports"><i class="fas fa-chart-bar"></i><span>التقارير</span></a></li>
             </ul>
@@ -1813,7 +1899,100 @@
 
             <div id="qrCodesGrid" class="qr-grid" style="display: none;"></div>
         </section>
-        
+
+        <!-- قسم إرسال واتساب التلقائي (ربط رقم احتياطي عبر QR) -->
+        <section id="waAuto" class="section">
+            <h2 class="section-title">إرسال واتساب تلقائي (رقم احتياطي)</h2>
+
+            <div class="wa-auto-warning">
+                <i class="fas fa-triangle-exclamation"></i>
+                ده بيربط رقم واتساب احتياطي بالنظام عن طريق مسح QR (زي واتساب ويب بالظبط)، عشان يبعت رسائل الحضور/الغياب لكل الطلاب تلقائيًا من غير ما تفتح واتساب يدويًا. <strong>استخدم رقم احتياطي مش رقمك الأساسي</strong>، لأن واتساب ممكن يوقف أي رقم بيبعت رسائل تلقائية بكمية كبيرة. اقرأ ملف README بتاع السيرفر لأفضل الممارسات.
+            </div>
+
+            <h3>1) إعدادات الاتصال بالسيرفر</h3>
+            <div class="wa-auto-settings">
+                <div class="form-group">
+                    <label for="waBackendUrl">رابط السيرفر (Backend URL)</label>
+                    <input type="text" id="waBackendUrl" placeholder="https://your-app.up.railway.app">
+                </div>
+                <div class="form-group">
+                    <label for="waBackendApiKey">مفتاح الوصول (API Key)</label>
+                    <input type="password" id="waBackendApiKey" placeholder="نفس المفتاح المكتوب في ملف .env">
+                </div>
+            </div>
+            <button type="button" class="btn" id="waSaveSettingsBtn" style="margin-bottom: 20px;">
+                <i class="fas fa-save"></i> حفظ الإعدادات
+            </button>
+
+            <h3>2) حالة الاتصال بواتساب</h3>
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom: 16px;">
+                <span id="waStatusBadge" class="wa-status-badge initializing">
+                    <i class="fas fa-circle-notch fa-spin"></i> <span id="waStatusText">لم يتم الفحص بعد</span>
+                </span>
+                <button type="button" class="btn" id="waCheckStatusBtn" style="padding:8px 16px; font-size:13px;">
+                    <i class="fas fa-rotate"></i> فحص الاتصال
+                </button>
+                <button type="button" class="btn" id="waShowQrBtn" style="padding:8px 16px; font-size:13px; display:none;">
+                    <i class="fas fa-qrcode"></i> اعرض QR للربط
+                </button>
+                <button type="button" class="btn btn-danger" id="waLogoutBtn" style="padding:8px 16px; font-size:13px; display:none;">
+                    <i class="fas fa-right-from-bracket"></i> فصل الرقم الحالي
+                </button>
+            </div>
+            <div id="waQrBox" class="wa-qr-box">
+                <img id="waQrImage" src="" alt="امسح كود QR من واتساب">
+                <p style="color:#333; font-size:12.5px; margin-top:10px;">افتح واتساب على الرقم الاحتياطي ← الإعدادات ← الأجهزة المرتبطة ← ربط جهاز، وامسح الكود ده.</p>
+            </div>
+
+            <h3>3) إرسال رسائل الحضور/الغياب لأسبوع معيّن</h3>
+            <div class="wa-auto-settings">
+                <div class="form-group">
+                    <label for="waAutoWeekSelect">الأسبوع</label>
+                    <select id="waAutoWeekSelect">
+                        <option value="">-- اختر أسبوع --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="waAutoAudience">المستقبلون</label>
+                    <select id="waAutoAudience">
+                        <option value="all">كل الطلاب</option>
+                        <option value="absent">الغائبين فقط</option>
+                        <option value="present">الحاضرين فقط</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="waAutoCountryCode">كود الدولة</label>
+                    <input type="text" id="waAutoCountryCode" value="20">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="waAutoMessageTemplate">نص الرسالة (يمكن استخدام {name} لاسم الطالب، {week} لاسم الأسبوع، {status} لحالة الحضور)</label>
+                <textarea id="waAutoMessageTemplate" rows="5">مرحبًا {name} 🙏
+تسجيل حضورك في {week}: أنت {status} هذا الأسبوع.
+خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</textarea>
+            </div>
+
+            <button type="button" class="btn btn-whatsapp" id="waAutoSendBtn">
+                <i class="fas fa-paper-plane"></i> إرسال تلقائي للمستقبلين
+            </button>
+
+            <div id="waAutoProgress" class="wa-auto-progress">
+                <div class="wa-auto-progress-bar">
+                    <div id="waAutoProgressFill" class="wa-auto-progress-bar-fill"></div>
+                </div>
+                <div id="waAutoProgressText" style="font-size:13px; color: var(--text-light); margin-bottom: 14px;"></div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>اسم الطالب</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody id="waAutoResultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <!-- قسم البحث عن طالب -->
         <section id="search" class="section">
             <h2 class="section-title">البحث عن طالب</h2>
@@ -2163,6 +2342,9 @@ let currentSelectedReportWeek = '';
                     populateReportWeekSelect();
                 } else if (sectionId === 'qrcodes') {
                     loadQrCodesGrid();
+                } else if (sectionId === 'waAuto') {
+                    populateWaAutoWeekSelect();
+                    loadWaAutoSettings();
                 }
             });
         });
@@ -2755,6 +2937,277 @@ let currentSelectedReportWeek = '';
 
             sendBtn.disabled = false;
             sendBtn.innerHTML = originalHTML;
+        });
+
+        // -------------------------
+        // 📌 3.4) إرسال واتساب تلقائي عبر رقم احتياطي مربوط بـ QR (سيرفر خارجي منفصل)
+        // -------------------------
+        // ده بيكلم سيرفر Node.js منفصل (شوف مجلد whatsapp-backend في المشروع) بيستخدم
+        // whatsapp-web.js لمحاكاة واتساب ويب. لازم يكون السيرفر ده شغال ومنشور على استضافة
+        // بتشتغل باستمرار (مش GitHub Pages)، وتكون حاطط رابطه ومفتاح الوصول بتاعه هنا.
+
+        function getWaBackendConfig() {
+            return {
+                url: (localStorage.getItem('waBackendUrl') || '').trim().replace(/\/+$/, ''),
+                key: localStorage.getItem('waBackendApiKey') || ''
+            };
+        }
+
+        function loadWaAutoSettings() {
+            const { url, key } = getWaBackendConfig();
+            const urlInput = document.getElementById('waBackendUrl');
+            const keyInput = document.getElementById('waBackendApiKey');
+            if (urlInput) urlInput.value = url;
+            if (keyInput) keyInput.value = key;
+            if (url && key) {
+                checkWaStatus();
+            }
+        }
+
+        document.getElementById('waSaveSettingsBtn').addEventListener('click', function() {
+            const url = document.getElementById('waBackendUrl').value.trim().replace(/\/+$/, '');
+            const key = document.getElementById('waBackendApiKey').value.trim();
+            if (!url || !key) {
+                alert('يرجى إدخال رابط السيرفر ومفتاح الوصول قبل الحفظ.');
+                return;
+            }
+            localStorage.setItem('waBackendUrl', url);
+            localStorage.setItem('waBackendApiKey', key);
+            alert('تم حفظ الإعدادات.');
+            checkWaStatus();
+        });
+
+        async function waBackendFetch(path, options = {}) {
+            const { url, key } = getWaBackendConfig();
+            if (!url || !key) {
+                throw new Error('من فضلك احفظ رابط السيرفر ومفتاح الوصول أولاً.');
+            }
+            const response = await fetch(url + path, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': key,
+                    ...(options.headers || {})
+                }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || `فشل الاتصال بالسيرفر (كود ${response.status})`);
+            }
+            return data;
+        }
+
+        function updateWaStatusUI(status, number) {
+            const badge = document.getElementById('waStatusBadge');
+            const text = document.getElementById('waStatusText');
+            const showQrBtn = document.getElementById('waShowQrBtn');
+            const logoutBtn = document.getElementById('waLogoutBtn');
+            const qrBox = document.getElementById('waQrBox');
+
+            badge.className = `wa-status-badge ${status}`;
+            const labels = {
+                connected: `متصل${number ? ' (' + number + ')' : ''} ✅`,
+                qr: 'محتاج مسح QR',
+                initializing: 'جاري التحضير...',
+                disconnected: 'غير متصل',
+                auth_failure: 'فشل التحقق من الرقم'
+            };
+            text.textContent = labels[status] || status;
+
+            if (status === 'connected') {
+                showQrBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-flex';
+                qrBox.style.display = 'none';
+            } else {
+                showQrBtn.style.display = 'inline-flex';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        let waStatusPollTimer = null;
+
+        async function checkWaStatus() {
+            try {
+                const data = await waBackendFetch('/status');
+                updateWaStatusUI(data.status, data.number);
+                return data.status;
+            } catch (error) {
+                console.error('خطأ في فحص حالة واتساب:', error);
+                document.getElementById('waStatusText').textContent = error.message;
+                document.getElementById('waStatusBadge').className = 'wa-status-badge disconnected';
+                return null;
+            }
+        }
+
+        document.getElementById('waCheckStatusBtn').addEventListener('click', checkWaStatus);
+
+        document.getElementById('waShowQrBtn').addEventListener('click', async function() {
+            const qrBox = document.getElementById('waQrBox');
+            const qrImage = document.getElementById('waQrImage');
+            try {
+                const data = await waBackendFetch('/qr');
+                if (data.qr) {
+                    qrImage.src = data.qr;
+                    qrBox.style.display = 'block';
+                } else {
+                    alert(data.message || 'كود QR لسه مش جاهز، حاول تاني بعد كام ثانية.');
+                }
+            } catch (error) {
+                alert(error.message);
+                return;
+            }
+
+            // فحص دوري لحد ما يتم الاتصال بنجاح، وبعدين نوقف الفحص ونقفل صورة QR
+            if (waStatusPollTimer) clearInterval(waStatusPollTimer);
+            waStatusPollTimer = setInterval(async () => {
+                const status = await checkWaStatus();
+                if (status === 'connected') {
+                    clearInterval(waStatusPollTimer);
+                    waStatusPollTimer = null;
+                    qrBox.style.display = 'none';
+                }
+            }, 4000);
+        });
+
+        document.getElementById('waLogoutBtn').addEventListener('click', async function() {
+            if (!confirm('هل أنت متأكد من فصل الرقم الحالي؟ هتحتاج تمسح QR تاني عشان تربط رقم من جديد.')) return;
+            try {
+                await waBackendFetch('/logout', { method: 'POST' });
+                await checkWaStatus();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // تعبئة قائمة الأسابيع في قسم الإرسال التلقائي
+        function populateWaAutoWeekSelect() {
+            const select = document.getElementById('waAutoWeekSelect');
+            select.innerHTML = '<option value="">-- اختر أسبوع --</option>';
+            weeks.forEach(week => {
+                const option = document.createElement('option');
+                option.value = week.id;
+                option.textContent = week.name;
+                select.appendChild(option);
+            });
+        }
+
+        // إرسال رسائل الحضور/الغياب تلقائيًا لكل الطلاب (أو المفلترين) في أسبوع معيّن
+        document.getElementById('waAutoSendBtn').addEventListener('click', async function() {
+            const weekId = document.getElementById('waAutoWeekSelect').value;
+            if (!weekId) {
+                alert('يرجى اختيار الأسبوع أولاً.');
+                return;
+            }
+
+            const status = await checkWaStatus();
+            if (status !== 'connected') {
+                alert('واتساب مش متصل حاليًا. اعمل مسح QR الأول من فوق قبل الإرسال.');
+                return;
+            }
+
+            const weekObj = weeks.find(w => w.id === weekId);
+            const weekName = weekObj ? weekObj.name : weekId;
+            const audience = document.getElementById('waAutoAudience').value;
+            const countryCode = document.getElementById('waAutoCountryCode').value.trim() || '20';
+            const template = document.getElementById('waAutoMessageTemplate').value;
+
+            const sendBtn = this;
+            sendBtn.disabled = true;
+            const originalHTML = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز القائمة...';
+
+            try {
+                // تحميل بيانات الحضور لهذا الأسبوع لتحديد مين حاضر ومين غايب
+                const attendanceSnapshot = await db.collection('attendance').where('weekId', '==', weekId).get();
+                const attendanceData = {};
+                attendanceSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    attendanceData[data.studentId] = data.present;
+                });
+
+                const messages = [];
+                students.forEach(student => {
+                    const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : false;
+                    if (audience === 'absent' && isPresent) return;
+                    if (audience === 'present' && !isPresent) return;
+
+                    const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
+                    if (!phone) return;
+
+                    const message = template
+                        .replaceAll('{name}', student.name || '')
+                        .replaceAll('{week}', weekName || '')
+                        .replaceAll('{status}', isPresent ? 'حاضر' : 'غائب');
+
+                    messages.push({ name: student.name, phone, message });
+                });
+
+                if (messages.length === 0) {
+                    alert('لا يوجد طلاب لديهم رقم هاتف مطابق للفلتر المحدد.');
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = originalHTML;
+                    return;
+                }
+
+                if (!confirm(`هيتم إرسال ${messages.length} رسالة تلقائيًا. العملية ممكن تاخد كام دقيقة (فيه تأخير مقصود بين كل رسالة لتقليل خطر إيقاف الرقم). متابعة؟`)) {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = originalHTML;
+                    return;
+                }
+
+                const startData = await waBackendFetch('/send-bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ messages })
+                });
+
+                const progressBox = document.getElementById('waAutoProgress');
+                const progressFill = document.getElementById('waAutoProgressFill');
+                const progressText = document.getElementById('waAutoProgressText');
+                const resultsBody = document.getElementById('waAutoResultsBody');
+                progressBox.style.display = 'block';
+                resultsBody.innerHTML = '';
+                messages.forEach(m => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${m.name}</td><td>⏳ في الانتظار</td>`;
+                    resultsBody.appendChild(row);
+                });
+
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const job = await waBackendFetch(`/job/${startData.jobId}`);
+                        const percent = job.total > 0 ? Math.round((job.sent / job.total) * 100) : 0;
+                        progressFill.style.width = percent + '%';
+                        progressText.textContent = `تم إرسال ${job.sent} من ${job.total}`;
+
+                        job.results.forEach((r, i) => {
+                            const row = resultsBody.children[i];
+                            if (!row) return;
+                            let statusLabel = '⏳ في الانتظار';
+                            if (r.status === 'sent') statusLabel = '✓ تم الإرسال';
+                            else if (r.status === 'failed') statusLabel = `⚠ فشل (${r.error || 'غير معروف'})`;
+                            row.children[1].textContent = statusLabel;
+                        });
+
+                        if (job.status === 'done') {
+                            clearInterval(pollInterval);
+                            sendBtn.disabled = false;
+                            sendBtn.innerHTML = originalHTML;
+                        }
+                    } catch (error) {
+                        console.error('خطأ في متابعة عملية الإرسال:', error);
+                        clearInterval(pollInterval);
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = originalHTML;
+                    }
+                }, 3000);
+            } catch (error) {
+                console.error('خطأ في الإرسال التلقائي:', error);
+                alert(error.message);
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = originalHTML;
+            }
         });
 
         // -------------------------
