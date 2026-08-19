@@ -415,6 +415,42 @@
             display: block;
         }
 
+        /* تمييز الإرسال اليدوي عن الإرسال التلقائي عبر API في قسم أكواد QR */
+        .wa-send-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .wa-send-method-box {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .wa-send-method-box h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14.5px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .wa-send-method-box p {
+            font-size: 12.5px;
+            color: var(--text-light);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .wa-send-method-auto {
+            border-color: rgba(102, 126, 234, 0.4);
+            background: rgba(102, 126, 234, 0.06);
+        }
+
         .wa-auto-progress {
             display: none;
             margin-top: 18px;
@@ -1190,11 +1226,22 @@
             -webkit-overflow-scrolling: touch;
             scroll-snap-type: x proximity;
             justify-content: flex-start;
-            scrollbar-width: none;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.35) transparent;
+            padding-bottom: 6px;
           }
 
           .nav-links::-webkit-scrollbar {
-            display: none;
+            height: 5px;
+          }
+
+          .nav-links::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          .nav-links::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.35);
+            border-radius: 10px;
           }
 
           .nav-links li {
@@ -1659,13 +1706,13 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="studentPhone">رقم الهاتف</label>
-                    <input type="tel" id="studentPhone" required>
+                    <label for="studentPhone">رقم الهاتف (اختياري)</label>
+                    <input type="tel" id="studentPhone">
                 </div>
                 
                 <div class="form-group">
-                    <label for="studentStage">المرحلة</label>
-                    <select id="studentStage" required>
+                    <label for="studentStage">المرحلة (اختياري)</label>
+                    <select id="studentStage">
                         <option value="">-- اختر المرحلة --</option>
                         <option value="أولى">أولى</option>
                         <option value="ثانية">ثانية</option>
@@ -1676,8 +1723,8 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="confessionFather">أب الاعتراف</label>
-                    <input type="text" id="confessionFather" required>
+                    <label for="confessionFather">أب الاعتراف (اختياري)</label>
+                    <input type="text" id="confessionFather">
                 </div>
                 
                 <div class="form-group">
@@ -1858,14 +1905,9 @@
                 </button>
             </div>
 
-            <!-- إعدادات وتحكم إرسال الأكواد عبر واتساب (بجانب أكواد QR مباشرة) -->
+            <!-- إعدادات نص رسالة واتساب (بجانب أكواد QR مباشرة) -->
             <div class="glass-card" style="padding:18px; border-radius:14px; margin-bottom:20px;">
                 <h3 style="margin-bottom:15px;"><i class="fab fa-whatsapp" style="color:#25d366;"></i> إرسال الأكواد عبر واتساب</h3>
-
-                <div class="form-group">
-                    <label for="waCountryCode">مفتاح الدولة (يُضاف تلقائيًا لأي رقم لا يبدأ به)</label>
-                    <input type="text" id="waCountryCode" value="20" placeholder="مثال: 20">
-                </div>
 
                 <div class="form-group">
                     <label for="waMessageTemplate">نص الرسالة (يمكن استخدام {name} لاسم الطالب، {id} لمعرفه، {stage} للمرحلة، {qr} لرابط بطاقة الطالب وكود الـQR بتاعه)</label>
@@ -1876,20 +1918,38 @@
 افتح اللينك وخده سكرين وتعالا بيه كل مره ❤
 ولو فيه اي مشكله تواصل هنا  </textarea>
                 </div>
+            </div>
 
-                <div class="attendance-toolbar">
+            <div id="qrCodesLoading" class="section-loading">
+                <div class="section-spinner"></div>
+                <div>جاري تجهيز أكواد QR...</div>
+            </div>
+
+            <!-- شريط التحديد والإرسال: حطيناه هنا فوق شبكة الأكواد مباشرة لأنه بيتحكم في
+                 المربعات الظاهرة تحته على طول، فيكون قريب من اللي بيتحكم فيه -->
+            <div class="glass-card" style="padding:18px; border-radius:14px; margin-bottom:20px;">
+                <div style="margin-bottom:14px;">
                     <button type="button" class="btn" id="waSelectAllBtn">
                         <i class="fas fa-check-double"></i> تحديد الكل
                     </button>
-                    <button type="button" class="btn btn-whatsapp" id="waSendSelectedBtn">
-                        <i class="fab fa-whatsapp"></i> تجهيز روابط واتساب للمحددين (<span id="waSelectedCount">0</span>)
-                    </button>
-                    <button type="button" class="btn btn-whatsapp" id="qrAutoSendBtn">
-                        <i class="fas fa-robot"></i> إرسال تلقائي للمحددين (رقم احتياطي)
-                    </button>
+                    <span style="font-size:13px; color:var(--text-light); margin-right:8px;">حدد الطلاب من المربعات أعلى كل كارت QR بالأسفل، ثم اختر طريقة الإرسال:</span>
                 </div>
-                <div style="font-size:13px; color: var(--text-light); margin-top:-5px;">
-                    <i class="fas fa-circle-info"></i> حدد الطلاب من المربعات أعلى كل كارت QR بالأسفل. "تجهيز روابط واتساب" بيديك رابط تفتحه بنفسك لكل طالب، و"إرسال تلقائي" بيبعت الرسائل من غير ما تلمس واتساب (لازم تكون رابط السيرفر مفعّل ومتصل من قسم "إرسال واتساب تلقائي").
+
+                <div class="wa-send-methods">
+                    <div class="wa-send-method-box">
+                        <h4><i class="fas fa-hand-pointer"></i> إرسال يدوي</h4>
+                        <p>بيجهزلك رابط واتساب لكل طالب، وانت اللي بتفتحه وتدوس إرسال بنفسك.</p>
+                        <button type="button" class="btn btn-whatsapp" id="waSendSelectedBtn">
+                            <i class="fab fa-whatsapp"></i> تجهيز روابط واتساب (<span id="waSelectedCount">0</span>)
+                        </button>
+                    </div>
+                    <div class="wa-send-method-box wa-send-method-auto">
+                        <h4><i class="fas fa-robot"></i> إرسال تلقائي (عبر API)</h4>
+                        <p>بيبعت الرسائل من غير ما تلمس واتساب، باستخدام السيرفر الخارجي والرقم الاحتياطي المربوط في قسم "إرسال واتساب تلقائي".</p>
+                        <button type="button" class="btn btn-whatsapp" id="qrAutoSendBtn">
+                            <i class="fas fa-robot"></i> إرسال تلقائي للمحددين
+                        </button>
+                    </div>
                 </div>
 
                 <div id="waSendResults" style="display:none; margin-top:15px;"></div>
@@ -1908,11 +1968,6 @@
                         </table>
                     </div>
                 </div>
-            </div>
-
-            <div id="qrCodesLoading" class="section-loading">
-                <div class="section-spinner"></div>
-                <div>جاري تجهيز أكواد QR...</div>
             </div>
 
             <div id="qrCodesGrid" class="qr-grid" style="display: none;"></div>
@@ -1969,10 +2024,6 @@
                     <select id="waAutoWeekSelect">
                         <option value="">-- اختر أسبوع --</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="waAutoCountryCode">كود الدولة</label>
-                    <input type="text" id="waAutoCountryCode" value="20">
                 </div>
             </div>
 
@@ -2035,10 +2086,6 @@
                         <option value="all">كل الطلاب</option>
                         <option value="selected">طلاب محددين</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="waCustomCountryCode">كود الدولة</label>
-                    <input type="text" id="waCustomCountryCode" value="20">
                 </div>
             </div>
 
@@ -2345,6 +2392,8 @@
         }
     
         let students = [];
+        // كود الدولة موحّد وثابت لكل أرقام الطلاب (مصر) بدل ما يتحدد لكل طالب أو كل قسم لوحده
+        const DEFAULT_COUNTRY_CODE = '20';
         let weeks = [];
         let attendance = {};
         let html5QrScanner = null; // مثيل ماسح QR
@@ -2903,7 +2952,7 @@ let currentSelectedReportWeek = '';
             const student = students.find(s => s.id === studentId);
             if (!student) return false;
 
-            const countryCode = document.getElementById('waCountryCode').value.trim() || '20';
+            const countryCode = DEFAULT_COUNTRY_CODE;
             const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
 
             if (!phone) {
@@ -2997,7 +3046,7 @@ let currentSelectedReportWeek = '';
                 row.appendChild(statusCell);
                 tbody.appendChild(row);
 
-                const countryCode = document.getElementById('waCountryCode').value.trim() || '20';
+                const countryCode = DEFAULT_COUNTRY_CODE;
                 const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
 
                 if (!phone) {
@@ -3043,7 +3092,7 @@ let currentSelectedReportWeek = '';
             sendBtn.disabled = true;
             sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز الرسائل...';
 
-            const countryCode = document.getElementById('waCountryCode').value.trim() || '20';
+            const countryCode = DEFAULT_COUNTRY_CODE;
             const template = document.getElementById('waMessageTemplate').value;
 
             const messages = [];
@@ -3385,7 +3434,7 @@ let currentSelectedReportWeek = '';
 
             const weekObj = weeks.find(w => w.id === weekId);
             const weekName = weekObj ? weekObj.name : weekId;
-            const countryCode = document.getElementById('waAutoCountryCode').value.trim() || '20';
+            const countryCode = DEFAULT_COUNTRY_CODE;
             const template = document.getElementById('waAutoMessageTemplate').value;
 
             const messages = [];
@@ -3454,7 +3503,7 @@ let currentSelectedReportWeek = '';
 
         document.getElementById('waCustomSendBtn').addEventListener('click', async function() {
             const audience = document.getElementById('waCustomAudience').value;
-            const countryCode = document.getElementById('waCustomCountryCode').value.trim() || '20';
+            const countryCode = DEFAULT_COUNTRY_CODE;
             const messageTemplate = document.getElementById('waCustomMessage').value.trim();
 
             if (!messageTemplate) {
