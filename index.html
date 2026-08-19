@@ -1884,12 +1884,30 @@
                     <button type="button" class="btn btn-whatsapp" id="waSendSelectedBtn">
                         <i class="fab fa-whatsapp"></i> تجهيز روابط واتساب للمحددين (<span id="waSelectedCount">0</span>)
                     </button>
+                    <button type="button" class="btn btn-whatsapp" id="qrAutoSendBtn">
+                        <i class="fas fa-robot"></i> إرسال تلقائي للمحددين (رقم احتياطي)
+                    </button>
                 </div>
                 <div style="font-size:13px; color: var(--text-light); margin-top:-5px;">
-                    <i class="fas fa-circle-info"></i> حدد الطلاب من المربعات أعلى كل كارت QR بالأسفل، ثم اضغط "تجهيز روابط واتساب" وسيظهر لكل طالب زر مستقل لفتح واتساب (المتصفح يمنع فتح عدة نوافذ تلقائيًا دفعة واحدة).
+                    <i class="fas fa-circle-info"></i> حدد الطلاب من المربعات أعلى كل كارت QR بالأسفل. "تجهيز روابط واتساب" بيديك رابط تفتحه بنفسك لكل طالب، و"إرسال تلقائي" بيبعت الرسائل من غير ما تلمس واتساب (لازم تكون رابط السيرفر مفعّل ومتصل من قسم "إرسال واتساب تلقائي").
                 </div>
 
                 <div id="waSendResults" style="display:none; margin-top:15px;"></div>
+
+                <div id="qrAutoProgress" class="wa-auto-progress">
+                    <div class="wa-auto-progress-bar">
+                        <div id="qrAutoProgressFill" class="wa-auto-progress-bar-fill"></div>
+                    </div>
+                    <div id="qrAutoProgressText" style="font-size:13px; color: var(--text-light); margin-bottom: 14px;"></div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>اسم الطالب</th><th>الحالة</th></tr>
+                            </thead>
+                            <tbody id="qrAutoResultsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div id="qrCodesLoading" class="section-loading">
@@ -1953,16 +1971,31 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="waAutoAudience">المستقبلون</label>
-                    <select id="waAutoAudience">
-                        <option value="all">كل الطلاب</option>
-                        <option value="absent">الغائبين فقط</option>
-                        <option value="present">الحاضرين فقط</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label for="waAutoCountryCode">كود الدولة</label>
                     <input type="text" id="waAutoCountryCode" value="20">
+                </div>
+            </div>
+
+            <div id="waAutoRecipientsBox" style="display:none;">
+                <div class="attendance-toolbar">
+                    <button type="button" class="btn" id="waAutoSelectAllBtn">
+                        <i class="fas fa-check-double"></i> تحديد الكل
+                    </button>
+                    <button type="button" class="btn" id="waAutoSelectAbsentBtn" style="padding:8px 16px; font-size:13px;">
+                        الغائبين فقط
+                    </button>
+                    <button type="button" class="btn" id="waAutoSelectPresentBtn" style="padding:8px 16px; font-size:13px;">
+                        الحاضرين فقط
+                    </button>
+                    <span style="font-size:13px; color:var(--text-light);">المحددون: <span id="waAutoSelectedCount">0</span></span>
+                </div>
+                <div class="table-container" style="max-height:320px; overflow-y:auto;">
+                    <table>
+                        <thead>
+                            <tr><th style="width:36px;"></th><th>اسم الطالب</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody id="waAutoRecipientsBody"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1974,7 +2007,7 @@
             </div>
 
             <button type="button" class="btn btn-whatsapp" id="waAutoSendBtn">
-                <i class="fas fa-paper-plane"></i> إرسال تلقائي للمستقبلين
+                <i class="fas fa-paper-plane"></i> إرسال تلقائي للمحددين (<span id="waAutoSendCount">0</span>)
             </button>
 
             <div id="waAutoProgress" class="wa-auto-progress">
@@ -1988,6 +2021,64 @@
                             <tr><th>اسم الطالب</th><th>الحالة</th></tr>
                         </thead>
                         <tbody id="waAutoResultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <hr style="border-color: var(--border); margin: 28px 0;">
+
+            <h3>4) إرسال رسالة مخصصة (لكل الطلاب أو طلاب معيّنين)</h3>
+            <div class="wa-auto-settings">
+                <div class="form-group">
+                    <label for="waCustomAudience">المستقبلون</label>
+                    <select id="waCustomAudience">
+                        <option value="all">كل الطلاب</option>
+                        <option value="selected">طلاب محددين</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="waCustomCountryCode">كود الدولة</label>
+                    <input type="text" id="waCustomCountryCode" value="20">
+                </div>
+            </div>
+
+            <div id="waCustomRecipientsBox" style="display:none;">
+                <div class="attendance-toolbar">
+                    <button type="button" class="btn" id="waCustomSelectAllBtn">
+                        <i class="fas fa-check-double"></i> تحديد الكل
+                    </button>
+                    <span style="font-size:13px; color:var(--text-light);">المحددون: <span id="waCustomSelectedCount">0</span></span>
+                </div>
+                <div class="table-container" style="max-height:320px; overflow-y:auto;">
+                    <table>
+                        <thead>
+                            <tr><th style="width:36px;"></th><th>اسم الطالب</th></tr>
+                        </thead>
+                        <tbody id="waCustomRecipientsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="waCustomMessage">نص الرسالة (يمكن استخدام {name} لاسم الطالب)</label>
+                <textarea id="waCustomMessage" rows="5" placeholder="اكتب رسالتك هنا..."></textarea>
+            </div>
+
+            <button type="button" class="btn btn-whatsapp" id="waCustomSendBtn">
+                <i class="fas fa-paper-plane"></i> إرسال الرسالة
+            </button>
+
+            <div id="waCustomProgress" class="wa-auto-progress">
+                <div class="wa-auto-progress-bar">
+                    <div id="waCustomProgressFill" class="wa-auto-progress-bar-fill"></div>
+                </div>
+                <div id="waCustomProgressText" style="font-size:13px; color: var(--text-light); margin-bottom: 14px;"></div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>اسم الطالب</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody id="waCustomResultsBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -2939,6 +3030,50 @@ let currentSelectedReportWeek = '';
             sendBtn.innerHTML = originalHTML;
         });
 
+        // إرسال روابط بطاقات QR للطلاب المحددين تلقائيًا عبر السيرفر الخارجي (بدون فتح واتساب يدويًا)
+        document.getElementById('qrAutoSendBtn').addEventListener('click', async function() {
+            const checkboxes = Array.from(document.querySelectorAll('.wa-student-checkbox:checked'));
+            if (checkboxes.length === 0) {
+                alert('يرجى تحديد طالب واحد على الأقل قبل الإرسال.');
+                return;
+            }
+
+            const sendBtn = this;
+            const originalHTML = sendBtn.innerHTML;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز الرسائل...';
+
+            const countryCode = document.getElementById('waCountryCode').value.trim() || '20';
+            const template = document.getElementById('waMessageTemplate').value;
+
+            const messages = [];
+            for (const cb of checkboxes) {
+                const studentId = cb.getAttribute('data-id');
+                const student = students.find(s => s.id === studentId);
+                if (!student) continue;
+                const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
+                if (!phone) continue;
+                try {
+                    const qrUrl = await getStudentCardUrl(student);
+                    const message = buildWaMessage(template, student, qrUrl);
+                    messages.push({ name: student.name, phone, message });
+                } catch (error) {
+                    console.error('خطأ في تجهيز رمز QR:', error);
+                }
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalHTML;
+
+            await sendMessagesViaAutoBackend(messages, {
+                sendBtn: sendBtn,
+                progressBox: document.getElementById('qrAutoProgress'),
+                progressFill: document.getElementById('qrAutoProgressFill'),
+                progressText: document.getElementById('qrAutoProgressText'),
+                resultsBody: document.getElementById('qrAutoResultsBody')
+            });
+        });
+
         // -------------------------
         // 📌 3.4) إرسال واتساب تلقائي عبر رقم احتياطي مربوط بـ QR (سيرفر خارجي منفصل)
         // -------------------------
@@ -2995,6 +3130,79 @@ let currentSelectedReportWeek = '';
                 throw new Error(data.error || `فشل الاتصال بالسيرفر (كود ${response.status})`);
             }
             return data;
+        }
+
+        // دالة مشتركة لإرسال أي قائمة رسائل عبر السيرفر الخارجي، مع متابعة حية للتقدم.
+        // بتتستخدم في 3 أماكن: روابط QR، رسائل الحضور/الغياب، والرسائل المخصصة.
+        async function sendMessagesViaAutoBackend(messages, ui) {
+            if (!messages || messages.length === 0) {
+                alert('لا يوجد طلاب لديهم رقم هاتف مطابق للاختيار.');
+                return;
+            }
+
+            const status = await checkWaStatus();
+            if (status !== 'connected') {
+                alert('واتساب مش متصل حاليًا. اعمل مسح QR الأول من قسم "إرسال واتساب تلقائي" قبل الإرسال.');
+                return;
+            }
+
+            if (!confirm(`هيتم إرسال ${messages.length} رسالة تلقائيًا. العملية ممكن تاخد كام دقيقة (فيه تأخير مقصود بين كل رسالة لتقليل خطر إيقاف الرقم). متابعة؟`)) {
+                return;
+            }
+
+            const originalHTML = ui.sendBtn.innerHTML;
+            ui.sendBtn.disabled = true;
+            ui.sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+
+            try {
+                const startData = await waBackendFetch('/send-bulk', {
+                    method: 'POST',
+                    body: JSON.stringify({ messages })
+                });
+
+                ui.progressBox.style.display = 'block';
+                ui.resultsBody.innerHTML = '';
+                messages.forEach(m => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${m.name}</td><td>⏳ في الانتظار</td>`;
+                    ui.resultsBody.appendChild(row);
+                });
+
+                await new Promise((resolve) => {
+                    const pollInterval = setInterval(async () => {
+                        try {
+                            const job = await waBackendFetch(`/job/${startData.jobId}`);
+                            const percent = job.total > 0 ? Math.round((job.sent / job.total) * 100) : 0;
+                            ui.progressFill.style.width = percent + '%';
+                            ui.progressText.textContent = `تم إرسال ${job.sent} من ${job.total}`;
+
+                            job.results.forEach((r, i) => {
+                                const row = ui.resultsBody.children[i];
+                                if (!row) return;
+                                let statusLabel = '⏳ في الانتظار';
+                                if (r.status === 'sent') statusLabel = '✓ تم الإرسال';
+                                else if (r.status === 'failed') statusLabel = `⚠ فشل (${r.error || 'غير معروف'})`;
+                                row.children[1].textContent = statusLabel;
+                            });
+
+                            if (job.status === 'done') {
+                                clearInterval(pollInterval);
+                                resolve();
+                            }
+                        } catch (error) {
+                            console.error('خطأ في متابعة عملية الإرسال:', error);
+                            clearInterval(pollInterval);
+                            resolve();
+                        }
+                    }, 3000);
+                });
+            } catch (error) {
+                console.error('خطأ في الإرسال التلقائي:', error);
+                alert(error.message);
+            } finally {
+                ui.sendBtn.disabled = false;
+                ui.sendBtn.innerHTML = originalHTML;
+            }
         }
 
         function updateWaStatusUI(status, number) {
@@ -3091,33 +3299,27 @@ let currentSelectedReportWeek = '';
             });
         }
 
-        // إرسال رسائل الحضور/الغياب تلقائيًا لكل الطلاب (أو المفلترين) في أسبوع معيّن
-        document.getElementById('waAutoSendBtn').addEventListener('click', async function() {
-            const weekId = document.getElementById('waAutoWeekSelect').value;
+        // تحديث عداد الطلاب المحددين في قائمة "إرسال رسائل الحضور/الغياب"
+        function updateWaAutoSelectedCount() {
+            const count = document.querySelectorAll('.wa-auto-recipient-checkbox:checked').length;
+            document.getElementById('waAutoSelectedCount').textContent = count;
+            document.getElementById('waAutoSendCount').textContent = count;
+        }
+
+        // تحميل قائمة الطلاب مع حالة حضورهم لهذا الأسبوع، عشان تحدد مين يستقبل الرسالة بنفسك
+        document.getElementById('waAutoWeekSelect').addEventListener('change', async function() {
+            const weekId = this.value;
+            const box = document.getElementById('waAutoRecipientsBox');
             if (!weekId) {
-                alert('يرجى اختيار الأسبوع أولاً.');
+                box.style.display = 'none';
                 return;
             }
 
-            const status = await checkWaStatus();
-            if (status !== 'connected') {
-                alert('واتساب مش متصل حاليًا. اعمل مسح QR الأول من فوق قبل الإرسال.');
-                return;
-            }
-
-            const weekObj = weeks.find(w => w.id === weekId);
-            const weekName = weekObj ? weekObj.name : weekId;
-            const audience = document.getElementById('waAutoAudience').value;
-            const countryCode = document.getElementById('waAutoCountryCode').value.trim() || '20';
-            const template = document.getElementById('waAutoMessageTemplate').value;
-
-            const sendBtn = this;
-            sendBtn.disabled = true;
-            const originalHTML = sendBtn.innerHTML;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز القائمة...';
+            box.style.display = 'block';
+            const body = document.getElementById('waAutoRecipientsBody');
+            body.innerHTML = '<tr><td colspan="3">جاري التحميل...</td></tr>';
 
             try {
-                // تحميل بيانات الحضور لهذا الأسبوع لتحديد مين حاضر ومين غايب
                 const attendanceSnapshot = await db.collection('attendance').where('weekId', '==', weekId).get();
                 const attendanceData = {};
                 attendanceSnapshot.forEach(doc => {
@@ -3125,89 +3327,170 @@ let currentSelectedReportWeek = '';
                     attendanceData[data.studentId] = data.present;
                 });
 
-                const messages = [];
+                body.innerHTML = '';
                 students.forEach(student => {
                     const isPresent = attendanceData[student.id] !== undefined ? attendanceData[student.id] : false;
-                    if (audience === 'absent' && isPresent) return;
-                    if (audience === 'present' && !isPresent) return;
-
-                    const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
-                    if (!phone) return;
-
-                    const message = template
-                        .replaceAll('{name}', student.name || '')
-                        .replaceAll('{week}', weekName || '')
-                        .replaceAll('{status}', isPresent ? 'حاضر' : 'غائب');
-
-                    messages.push({ name: student.name, phone, message });
-                });
-
-                if (messages.length === 0) {
-                    alert('لا يوجد طلاب لديهم رقم هاتف مطابق للفلتر المحدد.');
-                    sendBtn.disabled = false;
-                    sendBtn.innerHTML = originalHTML;
-                    return;
-                }
-
-                if (!confirm(`هيتم إرسال ${messages.length} رسالة تلقائيًا. العملية ممكن تاخد كام دقيقة (فيه تأخير مقصود بين كل رسالة لتقليل خطر إيقاف الرقم). متابعة؟`)) {
-                    sendBtn.disabled = false;
-                    sendBtn.innerHTML = originalHTML;
-                    return;
-                }
-
-                const startData = await waBackendFetch('/send-bulk', {
-                    method: 'POST',
-                    body: JSON.stringify({ messages })
-                });
-
-                const progressBox = document.getElementById('waAutoProgress');
-                const progressFill = document.getElementById('waAutoProgressFill');
-                const progressText = document.getElementById('waAutoProgressText');
-                const resultsBody = document.getElementById('waAutoResultsBody');
-                progressBox.style.display = 'block';
-                resultsBody.innerHTML = '';
-                messages.forEach(m => {
                     const row = document.createElement('tr');
-                    row.innerHTML = `<td>${m.name}</td><td>⏳ في الانتظار</td>`;
-                    resultsBody.appendChild(row);
+                    row.innerHTML = `
+                        <td><input type="checkbox" class="wa-auto-recipient-checkbox" data-id="${student.id}" data-present="${isPresent}" checked onchange="updateWaAutoSelectedCount()"></td>
+                        <td>${student.name}</td>
+                        <td><span class="attendance-status ${isPresent ? 'status-present' : 'status-absent'}">${isPresent ? 'حاضر' : 'غائب'}</span></td>
+                    `;
+                    body.appendChild(row);
                 });
-
-                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
-
-                const pollInterval = setInterval(async () => {
-                    try {
-                        const job = await waBackendFetch(`/job/${startData.jobId}`);
-                        const percent = job.total > 0 ? Math.round((job.sent / job.total) * 100) : 0;
-                        progressFill.style.width = percent + '%';
-                        progressText.textContent = `تم إرسال ${job.sent} من ${job.total}`;
-
-                        job.results.forEach((r, i) => {
-                            const row = resultsBody.children[i];
-                            if (!row) return;
-                            let statusLabel = '⏳ في الانتظار';
-                            if (r.status === 'sent') statusLabel = '✓ تم الإرسال';
-                            else if (r.status === 'failed') statusLabel = `⚠ فشل (${r.error || 'غير معروف'})`;
-                            row.children[1].textContent = statusLabel;
-                        });
-
-                        if (job.status === 'done') {
-                            clearInterval(pollInterval);
-                            sendBtn.disabled = false;
-                            sendBtn.innerHTML = originalHTML;
-                        }
-                    } catch (error) {
-                        console.error('خطأ في متابعة عملية الإرسال:', error);
-                        clearInterval(pollInterval);
-                        sendBtn.disabled = false;
-                        sendBtn.innerHTML = originalHTML;
-                    }
-                }, 3000);
+                updateWaAutoSelectedCount();
             } catch (error) {
-                console.error('خطأ في الإرسال التلقائي:', error);
-                alert(error.message);
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = originalHTML;
+                console.error('خطأ في تحميل بيانات الحضور:', error);
+                body.innerHTML = '<tr><td colspan="3">حدث خطأ أثناء تحميل قائمة الطلاب.</td></tr>';
             }
+        });
+
+        document.getElementById('waAutoSelectAllBtn').addEventListener('click', function() {
+            const boxes = document.querySelectorAll('.wa-auto-recipient-checkbox');
+            const allChecked = boxes.length > 0 && Array.from(boxes).every(cb => cb.checked);
+            boxes.forEach(cb => cb.checked = !allChecked);
+            this.innerHTML = !allChecked
+                ? '<i class="fas fa-times"></i> إلغاء التحديد'
+                : '<i class="fas fa-check-double"></i> تحديد الكل';
+            updateWaAutoSelectedCount();
+        });
+
+        document.getElementById('waAutoSelectAbsentBtn').addEventListener('click', function() {
+            document.querySelectorAll('.wa-auto-recipient-checkbox').forEach(cb => {
+                cb.checked = cb.getAttribute('data-present') === 'false';
+            });
+            updateWaAutoSelectedCount();
+        });
+
+        document.getElementById('waAutoSelectPresentBtn').addEventListener('click', function() {
+            document.querySelectorAll('.wa-auto-recipient-checkbox').forEach(cb => {
+                cb.checked = cb.getAttribute('data-present') === 'true';
+            });
+            updateWaAutoSelectedCount();
+        });
+
+        // إرسال رسائل الحضور/الغياب تلقائيًا للطلاب المحددين في القائمة
+        document.getElementById('waAutoSendBtn').addEventListener('click', async function() {
+            const weekId = document.getElementById('waAutoWeekSelect').value;
+            if (!weekId) {
+                alert('يرجى اختيار الأسبوع أولاً.');
+                return;
+            }
+
+            const checkboxes = Array.from(document.querySelectorAll('.wa-auto-recipient-checkbox:checked'));
+            if (checkboxes.length === 0) {
+                alert('يرجى تحديد طالب واحد على الأقل.');
+                return;
+            }
+
+            const weekObj = weeks.find(w => w.id === weekId);
+            const weekName = weekObj ? weekObj.name : weekId;
+            const countryCode = document.getElementById('waAutoCountryCode').value.trim() || '20';
+            const template = document.getElementById('waAutoMessageTemplate').value;
+
+            const messages = [];
+            checkboxes.forEach(cb => {
+                const studentId = cb.getAttribute('data-id');
+                const student = students.find(s => s.id === studentId);
+                if (!student) return;
+                const isPresent = cb.getAttribute('data-present') === 'true';
+                const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
+                if (!phone) return;
+
+                const message = template
+                    .replaceAll('{name}', student.name || '')
+                    .replaceAll('{week}', weekName || '')
+                    .replaceAll('{status}', isPresent ? 'حاضر' : 'غائب');
+
+                messages.push({ name: student.name, phone, message });
+            });
+
+            await sendMessagesViaAutoBackend(messages, {
+                sendBtn: this,
+                progressBox: document.getElementById('waAutoProgress'),
+                progressFill: document.getElementById('waAutoProgressFill'),
+                progressText: document.getElementById('waAutoProgressText'),
+                resultsBody: document.getElementById('waAutoResultsBody')
+            });
+        });
+
+        // -------------------------
+        // 📌 3.5) إرسال رسالة مخصصة (لكل الطلاب أو طلاب محددين)
+        // -------------------------
+        document.getElementById('waCustomAudience').addEventListener('change', function() {
+            const box = document.getElementById('waCustomRecipientsBox');
+            if (this.value === 'selected') {
+                box.style.display = 'block';
+                const body = document.getElementById('waCustomRecipientsBody');
+                body.innerHTML = '';
+                students.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><input type="checkbox" class="wa-custom-recipient-checkbox" data-id="${student.id}" onchange="updateWaCustomSelectedCount()"></td>
+                        <td>${student.name}</td>
+                    `;
+                    body.appendChild(row);
+                });
+                updateWaCustomSelectedCount();
+            } else {
+                box.style.display = 'none';
+            }
+        });
+
+        function updateWaCustomSelectedCount() {
+            const count = document.querySelectorAll('.wa-custom-recipient-checkbox:checked').length;
+            document.getElementById('waCustomSelectedCount').textContent = count;
+        }
+
+        document.getElementById('waCustomSelectAllBtn').addEventListener('click', function() {
+            const boxes = document.querySelectorAll('.wa-custom-recipient-checkbox');
+            const allChecked = boxes.length > 0 && Array.from(boxes).every(cb => cb.checked);
+            boxes.forEach(cb => cb.checked = !allChecked);
+            this.innerHTML = !allChecked
+                ? '<i class="fas fa-times"></i> إلغاء التحديد'
+                : '<i class="fas fa-check-double"></i> تحديد الكل';
+            updateWaCustomSelectedCount();
+        });
+
+        document.getElementById('waCustomSendBtn').addEventListener('click', async function() {
+            const audience = document.getElementById('waCustomAudience').value;
+            const countryCode = document.getElementById('waCustomCountryCode').value.trim() || '20';
+            const messageTemplate = document.getElementById('waCustomMessage').value.trim();
+
+            if (!messageTemplate) {
+                alert('يرجى كتابة نص الرسالة أولاً.');
+                return;
+            }
+
+            let targetStudents = [];
+            if (audience === 'selected') {
+                const checkboxes = Array.from(document.querySelectorAll('.wa-custom-recipient-checkbox:checked'));
+                if (checkboxes.length === 0) {
+                    alert('يرجى تحديد طالب واحد على الأقل.');
+                    return;
+                }
+                targetStudents = checkboxes
+                    .map(cb => students.find(s => s.id === cb.getAttribute('data-id')))
+                    .filter(Boolean);
+            } else {
+                targetStudents = students;
+            }
+
+            const messages = [];
+            targetStudents.forEach(student => {
+                const phone = normalizePhoneForWhatsapp(student.studentPhone, countryCode);
+                if (!phone) return;
+                const message = messageTemplate.replaceAll('{name}', student.name || '');
+                messages.push({ name: student.name, phone, message });
+            });
+
+            await sendMessagesViaAutoBackend(messages, {
+                sendBtn: this,
+                progressBox: document.getElementById('waCustomProgress'),
+                progressFill: document.getElementById('waCustomProgressFill'),
+                progressText: document.getElementById('waCustomProgressText'),
+                resultsBody: document.getElementById('waCustomResultsBody')
+            });
         });
 
         // -------------------------
