@@ -40,71 +40,50 @@
           --warning-dark: #e67e22;
           --text: #e2e8f0;
           --text-light: #a0aec0;
-          --border: rgba(255, 255, 255, 0.22);
+          --border: #4a5568;
           --bg-primary: #1a202c;
-          --bg-secondary: rgba(255, 255, 255, 0.07);
-          --bg-card: rgba(255, 255, 255, 0.08);
+          --bg-secondary: #2d3748;
+          --bg-card: rgba(45, 55, 72, 0.8);
           --shadow: rgba(0, 0, 0, 0.4);
-          --glow: rgba(255, 255, 255, 0.25);
-          --glass-bg: rgba(255, 255, 255, 0.14);
+          --glow: rgba(52, 152, 219, 0.3);
+          --glass-bg: rgba(255, 255, 255, 0.1);
           --heading-font: 'Cairo', 'Tajawal', sans-serif;
         }
 
-        /* ليكويد جلاس هو الوضع الأساسي — زجاج شفاف قوي فوق خلفية ملونة متحركة */
-        body {
-          background:
-              radial-gradient(circle at 10% 15%, rgba(52,152,219,0.5), transparent 45%),
-              radial-gradient(circle at 90% 10%, rgba(231,76,60,0.4), transparent 45%),
-              radial-gradient(circle at 25% 90%, rgba(46,204,113,0.35), transparent 45%),
-              radial-gradient(circle at 85% 85%, rgba(155,89,182,0.45), transparent 45%),
-              #0f1320;
-          background-size: 200% 200%;
-          animation: liquidBgShift 26s ease-in-out infinite;
+        /* لوحة ألوان بديلة بروح الكنيسة القبطية (ذهبي/كستنائي دافئ) — تتفعّل بزرار "وضع الكنيسة" */
+        html[data-theme="church"] {
+          --primary: #c9971c;
+          --primary-dark: #a67815;
+          --secondary: #6b1d24;
+          --secondary-light: #8f2a35;
+          --accent: #8b2635;
+          --accent-dark: #6b1d24;
+          --light: #3a2318;
+          --lighter: #5a4632;
+          --success: #7a9a3d;
+          --success-dark: #62801f;
+          --warning: #d4941e;
+          --warning-dark: #b8791a;
+          --text: #f5e6c8;
+          --text-light: #cbb490;
+          --border: #5a4632;
+          --bg-primary: #241014;
+          --bg-secondary: #2b1810;
+          --bg-card: rgba(58, 35, 24, 0.85);
+          --shadow: rgba(0, 0, 0, 0.55);
+          --glow: rgba(201, 151, 28, 0.35);
+          --glass-bg: rgba(255, 235, 180, 0.08);
+          --heading-font: 'Amiri', 'Cairo', serif;
         }
 
-        @keyframes liquidBgShift {
-          0%, 100% { background-position: 0% 0%; }
-          50% { background-position: 100% 100%; }
+        html[data-theme="church"] body {
+          background: linear-gradient(135deg, #1a0c0e 0%, #241014 100%);
         }
 
-        header,
-        nav,
-        .section,
-        .glass-card,
-        .glass-effect,
-        .modal-box,
-        th {
-          background: var(--bg-card) !important;
-          backdrop-filter: blur(26px) saturate(180%);
-          -webkit-backdrop-filter: blur(26px) saturate(180%);
-          border: 1px solid var(--border);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
-        }
-
-        /* الوضع الداكن العادي — يتفعّل عن طريق سويتش التبديل، بديل ثانوي عن ليكويد جلاس */
-        html[data-theme="dark"] {
-          --border: #4a5568;
-          --bg-secondary: #2d3748;
-          --bg-card: rgba(45, 55, 72, 0.8);
-          --glow: rgba(52, 152, 219, 0.3);
-          --glass-bg: rgba(255, 255, 255, 0.1);
-        }
-
-        html[data-theme="dark"] body {
-          background: linear-gradient(135deg, #0f172a 0%, #1a202c 100%);
-          animation: none;
-        }
-
-        html[data-theme="dark"] header,
-        html[data-theme="dark"] nav,
-        html[data-theme="dark"] .section,
-        html[data-theme="dark"] .glass-card,
-        html[data-theme="dark"] .glass-effect,
-        html[data-theme="dark"] .modal-box,
-        html[data-theme="dark"] th {
-          backdrop-filter: blur(15px);
-          -webkit-backdrop-filter: blur(15px);
-          box-shadow: 0 10px 30px var(--shadow);
+        html[data-theme="church"] .logo h1,
+        html[data-theme="church"] .section-title,
+        html[data-theme="church"] .login-title {
+          font-family: var(--heading-font);
         }
         
         /* تأثيرات زجاجية محسنة */
@@ -859,79 +838,21 @@
           -webkit-text-fill-color: transparent;
         }
 
-        .header-actions {
+        .header-action-btn {
           position: absolute;
           top: 18px;
-          left: 18px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
+          padding: 8px 16px;
+          font-size: 13px;
+          
           z-index: 2;
         }
 
-        .header-actions .btn {
-          padding: 8px 16px;
-          font-size: 13px;
+        .header-action-right {
+          right: 18px;
         }
 
-        .theme-switch-wrap {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          color: #fff;
-          background: rgba(255, 255, 255, 0.12);
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 20px;
-          padding: 6px 10px;
-        }
-
-        .theme-switch-icon {
-          font-size: 13px;
-          opacity: 0.85;
-        }
-
-        .theme-switch {
-          position: relative;
-          display: inline-block;
-          width: 40px;
-          height: 22px;
-        }
-
-        .theme-switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-
-        .theme-switch-slider {
-          position: absolute;
-          inset: 0;
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.35);
-          border-radius: 22px;
-          transition: background 0.3s ease;
-        }
-
-        .theme-switch-slider::before {
-          content: '';
-          position: absolute;
-          height: 16px;
-          width: 16px;
-          left: 2px;
-          bottom: 2px;
-          background: #fff;
-          border-radius: 50%;
-          transition: transform 0.3s ease;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-        }
-
-        .theme-switch input:checked + .theme-switch-slider {
-          background: var(--secondary);
-        }
-
-        .theme-switch input:checked + .theme-switch-slider::before {
-          transform: translateX(18px);
+        .header-action-left {
+          left: 18px;
         }
         
         nav {
@@ -1111,8 +1032,8 @@
           background: rgba(255, 255, 255, 0.035);
         }
 
-        html[data-theme="liquid"] tbody tr:nth-child(even) {
-          background: rgba(255, 255, 255, 0.06);
+        html[data-theme="church"] tbody tr:nth-child(even) {
+          background: rgba(255, 235, 180, 0.05);
         }
 
         tr:hover {
@@ -1499,10 +1420,12 @@
             margin: 10px 0;
           }
 
-          .header-actions {
+          .header-action-btn {
             position: static;
-            justify-content: center;
-            margin: 10px 0 0;
+            display: inline-flex;
+            margin: 6px 4px 0;
+            font-size: 12px;
+            padding: 6px 10px;
           }
           
           .section {
@@ -1953,19 +1876,10 @@
                     </div>
                   </div>
             </div>
-            <div class="header-actions">
-                <div class="theme-switch-wrap" title="التبديل بين الوضع الداكن وليكويد جلاس">
-                    <i class="fas fa-moon theme-switch-icon"></i>
-                    <label class="theme-switch">
-                        <input type="checkbox" id="themeToggleSwitch">
-                        <span class="theme-switch-slider"></span>
-                    </label>
-                    <i class="fas fa-droplet theme-switch-icon"></i>
-                </div>
-                <button type="button" id="logoutBtn" class="btn">
-                    <i class="fas fa-right-from-bracket"></i> خروج
-                </button>
-            </div>
+
+            <button type="button" id="logoutBtn" class="btn header-action-btn header-action-left">
+                <i class="fas fa-right-from-bracket"></i> خروج
+            </button>
         </div>
     </header>
     
@@ -2473,37 +2387,40 @@
 
     <script>
         // -------------------------
-        // 📌 0.0-أ) لوحة الألوان (ليكويد جلاس هو الوضع الأساسي / الداكن وضع ثانوي بالسويتش)
+        // 📌 0.0-أ) لوحة الألوان (الوضع العادي / وضع الكنيسة)
         // -------------------------
-        function updateThemeSwitchUI() {
-            const switchInput = document.getElementById('themeToggleSwitch');
-            if (!switchInput) return;
-            switchInput.checked = document.documentElement.getAttribute('data-theme') === 'dark';
+        function updateThemeToggleLabel() {
+            const labelEl = document.getElementById('themeToggleLabel');
+            if (!labelEl) return;
+            const isChurch = document.documentElement.getAttribute('data-theme') === 'church';
+            labelEl.textContent = isChurch ? 'الوضع العادي' : 'وضع الكنيسة';
         }
 
-        // تطبيق آخر وضع اختاره المستخدم (لو موجود) من أول لحظة تحميل — الوضع الافتراضي هو ليكويد جلاس
+        // تطبيق آخر لوحة ألوان اختارها المستخدم (لو موجودة) من أول لحظة تحميل
         (function applyStoredTheme() {
             try {
-                if (localStorage.getItem('appTheme') === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
+                if (localStorage.getItem('appTheme') === 'church') {
+                    document.documentElement.setAttribute('data-theme', 'church');
                 }
             } catch (error) {
-                console.warn('تعذر قراءة الوضع المحفوظ:', error);
+                console.warn('تعذر قراءة لوحة الألوان المحفوظة:', error);
             }
         })();
 
         document.addEventListener('DOMContentLoaded', function() {
-            updateThemeSwitchUI();
-            const switchInput = document.getElementById('themeToggleSwitch');
-            if (switchInput) {
-                switchInput.addEventListener('change', function() {
-                    if (this.checked) {
-                        document.documentElement.setAttribute('data-theme', 'dark');
-                        try { localStorage.setItem('appTheme', 'dark'); } catch (error) {}
-                    } else {
+            updateThemeToggleLabel();
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function() {
+                    const isChurch = document.documentElement.getAttribute('data-theme') === 'church';
+                    if (isChurch) {
                         document.documentElement.removeAttribute('data-theme');
-                        try { localStorage.setItem('appTheme', 'liquid'); } catch (error) {}
+                        try { localStorage.setItem('appTheme', 'default'); } catch (error) {}
+                    } else {
+                        document.documentElement.setAttribute('data-theme', 'church');
+                        try { localStorage.setItem('appTheme', 'church'); } catch (error) {}
                     }
+                    updateThemeToggleLabel();
                 });
             }
         });
