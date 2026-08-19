@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>خدمة ابولوجيا للدفاعيات X كورس أ ب دفاعيات</title>
     <link rel="shortcut icon" href="https://github.com/sefen66/MadrsaEl4amamsa/blob/main/WhatsApp%20Image%202025-09-25%20at%2013.04.33_37954a2f.jpg?raw=true" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- إضافة Firebase SDK -->
@@ -47,6 +47,43 @@
           --shadow: rgba(0, 0, 0, 0.4);
           --glow: rgba(52, 152, 219, 0.3);
           --glass-bg: rgba(255, 255, 255, 0.1);
+          --heading-font: 'Cairo', 'Tajawal', sans-serif;
+        }
+
+        /* لوحة ألوان بديلة بروح الكنيسة القبطية (ذهبي/كستنائي دافئ) — تتفعّل بزرار "وضع الكنيسة" */
+        html[data-theme="church"] {
+          --primary: #c9971c;
+          --primary-dark: #a67815;
+          --secondary: #6b1d24;
+          --secondary-light: #8f2a35;
+          --accent: #8b2635;
+          --accent-dark: #6b1d24;
+          --light: #3a2318;
+          --lighter: #5a4632;
+          --success: #7a9a3d;
+          --success-dark: #62801f;
+          --warning: #d4941e;
+          --warning-dark: #b8791a;
+          --text: #f5e6c8;
+          --text-light: #cbb490;
+          --border: #5a4632;
+          --bg-primary: #241014;
+          --bg-secondary: #2b1810;
+          --bg-card: rgba(58, 35, 24, 0.85);
+          --shadow: rgba(0, 0, 0, 0.55);
+          --glow: rgba(201, 151, 28, 0.35);
+          --glass-bg: rgba(255, 235, 180, 0.08);
+          --heading-font: 'Amiri', 'Cairo', serif;
+        }
+
+        html[data-theme="church"] body {
+          background: linear-gradient(135deg, #1a0c0e 0%, #241014 100%);
+        }
+
+        html[data-theme="church"] .logo h1,
+        html[data-theme="church"] .section-title,
+        html[data-theme="church"] .login-title {
+          font-family: var(--heading-font);
         }
         
         /* تأثيرات زجاجية محسنة */
@@ -194,7 +231,7 @@
             box-sizing: border-box;
             direction: rtl;
             text-align: center;
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Cairo', 'Tajawal', sans-serif;
             overflow-y: auto;
         }
 
@@ -334,7 +371,7 @@
             padding: 10px 16px;
             font-size: 13.5px;
             font-weight: 600;
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Cairo', 'Tajawal', sans-serif;
             direction: rtl;
         }
 
@@ -480,17 +517,64 @@
             z-index: 6000;
             width: 100%;
             min-height: 100vh;
+            overflow: hidden;
             background:
                 radial-gradient(circle at 15% 15%, rgba(102,126,234,0.28), transparent 55%),
                 radial-gradient(circle at 85% 85%, rgba(118,75,162,0.28), transparent 55%),
                 var(--bg-primary);
+            background-size: 180% 180%;
+            animation: loginGradientShift 20s ease-in-out infinite;
             align-items: center;
             justify-content: center;
             padding: 24px;
             box-sizing: border-box;
             direction: rtl;
             text-align: center;
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+        }
+
+        @keyframes loginGradientShift {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+        }
+
+        .login-screen::before,
+        .login-screen::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(50px);
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .login-screen::before {
+            width: 280px;
+            height: 280px;
+            background: var(--primary);
+            top: 8%;
+            right: 10%;
+            animation: loginOrbFloat1 13s ease-in-out infinite;
+        }
+
+        .login-screen::after {
+            width: 220px;
+            height: 220px;
+            background: var(--accent);
+            bottom: 8%;
+            left: 8%;
+            animation: loginOrbFloat2 15s ease-in-out infinite;
+        }
+
+        @keyframes loginOrbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-30px, 40px) scale(1.15); }
+        }
+
+        @keyframes loginOrbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.1); }
         }
 
         .login-box {
@@ -499,6 +583,15 @@
             border-radius: 24px;
             padding: 34px 26px 28px;
             margin: auto;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+            animation: loginBoxIn 0.55s ease;
+        }
+
+        @keyframes loginBoxIn {
+            from { opacity: 0; transform: translateY(18px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .login-box .student-card-logo {
@@ -533,7 +626,7 @@
             border: 1px solid var(--border);
             background: rgba(255,255,255,0.05);
             color: var(--text);
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Cairo', 'Tajawal', sans-serif;
             font-size: 14px;
         }
 
@@ -692,7 +785,7 @@
         }
         
         body {
-          font-family: 'Tajawal', sans-serif;
+          font-family: 'Cairo', 'Tajawal', sans-serif;
           background: linear-gradient(135deg, #0f172a 0%, #1a202c 100%);
           color: var(--text);
           line-height: 1.6;
@@ -743,6 +836,22 @@
           background: linear-gradient(90deg, #fff, #e2e8f0);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+        }
+
+        .header-action-btn {
+          position: absolute;
+          top: 18px;
+          padding: 8px 16px;
+          font-size: 13px;
+          z-index: 2;
+        }
+
+        .header-action-right {
+          right: 18px;
+        }
+
+        .header-action-left {
+          left: 18px;
         }
         
         nav {
@@ -824,7 +933,7 @@
           border: 1px solid var(--border);
           border-radius: 8px;
           font-size: 16px;
-          font-family: 'Tajawal', sans-serif;
+          font-family: 'Cairo', 'Tajawal', sans-serif;
           transition: all 0.3s ease;
           background: rgba(255, 255, 255, 0.05);
           color: var(--text);
@@ -855,7 +964,7 @@
           font-size: 16px;
           font-weight: 500;
           transition: all 0.3s ease;
-          font-family: 'Tajawal', sans-serif;
+          font-family: 'Cairo', 'Tajawal', sans-serif;
           position: relative;
           overflow: hidden;
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -917,9 +1026,17 @@
         tr {
           transition: background 0.3s ease;
         }
-        
+
+        tbody tr:nth-child(even) {
+          background: rgba(255, 255, 255, 0.035);
+        }
+
+        html[data-theme="church"] tbody tr:nth-child(even) {
+          background: rgba(255, 235, 180, 0.05);
+        }
+
         tr:hover {
-          background: rgba(255, 255, 255, 0.05);
+          background: rgba(255, 255, 255, 0.08) !important;
         }
         
         .attendance-table {
@@ -941,7 +1058,7 @@
           border: 1px solid var(--border);
           background: rgba(255,255,255,0.05);
           color: var(--text);
-          font-family: 'Tajawal', sans-serif;
+          font-family: 'Cairo', 'Tajawal', sans-serif;
           font-size: 14px;
         }
 
@@ -1301,9 +1418,75 @@
           .logo h1 {
             margin: 10px 0;
           }
+
+          .header-action-btn {
+            position: static;
+            display: inline-flex;
+            margin: 6px 4px 0;
+            font-size: 12px;
+            padding: 6px 10px;
+          }
           
           .section {
             padding: 15px;
+          }
+        }
+
+        /* Sidebar جانبي للشاشات الكبيرة بدل القائمة الأفقية — بيوضح كل الأقسام دفعة واحدة */
+        @media (min-width: 993px) {
+          header .container,
+          nav .container {
+            max-width: none;
+          }
+
+          header {
+            margin-right: 250px;
+          }
+
+          nav {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 250px;
+            height: 100vh;
+            margin-bottom: 0;
+            border-radius: 0;
+            overflow-y: auto;
+            z-index: 900;
+            display: flex;
+            flex-direction: column;
+            padding-top: 18px;
+            box-sizing: border-box;
+          }
+
+          nav .container {
+            padding: 0 14px;
+            width: 100%;
+          }
+
+          .nav-links {
+            flex-direction: column;
+            gap: 6px;
+          }
+
+          .nav-links li a {
+            justify-content: flex-start;
+            border-bottom: none;
+            border-radius: 10px;
+            padding: 13px 16px;
+          }
+
+          .nav-links li a.active {
+            border-bottom: none;
+            border-right: 3px solid var(--primary);
+            border-radius: 8px;
+          }
+
+          #mainContainer {
+            margin-right: 250px;
+            max-width: none;
+            padding: 0 30px;
           }
         }
         
@@ -1357,7 +1540,7 @@
           border: 1px solid var(--border);
           border-radius: 8px;
           font-size: 15px;
-          font-family: 'Tajawal', sans-serif;
+          font-family: 'Cairo', 'Tajawal', sans-serif;
           transition: all 0.3s ease;
           background: rgba(255, 255, 255, 0.05);
           color: var(--text);
@@ -1508,6 +1691,23 @@
         .scan-result-box.active {
           display: block;
           animation: slideInUp 0.3s ease;
+        }
+
+        .scan-result-icon {
+          display: inline-block;
+          font-size: 22px;
+          vertical-align: middle;
+          margin-left: 8px;
+        }
+
+        .scan-result-icon.pop-animate {
+          animation: scanIconPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes scanIconPop {
+          0% { transform: scale(0.3); opacity: 0.4; }
+          55% { transform: scale(1.35); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
         }
 
         .scan-hint {
@@ -1675,7 +1875,10 @@
                     </div>
                   </div>
             </div>
-            <button type="button" id="logoutBtn" class="btn" style="position:absolute; top:18px; left:18px; padding:8px 16px; font-size:13px;">
+            <button type="button" id="themeToggleBtn" class="btn header-action-btn header-action-right">
+                <i class="fas fa-church"></i> <span id="themeToggleLabel">وضع الكنيسة</span>
+            </button>
+            <button type="button" id="logoutBtn" class="btn header-action-btn header-action-left">
                 <i class="fas fa-right-from-bracket"></i> خروج
             </button>
         </div>
@@ -1695,8 +1898,7 @@
         </div>
     </nav>
     
-    <div class="container">
-        <!-- قسم إدارة الطلاب -->
+    <div class="container" id="mainContainer">
         <section id="students" class="section active">
             <h2 class="section-title">إدارة الطلاب</h2>
             
@@ -1886,7 +2088,7 @@
                 <div class="scan-hint" id="scanHint">وجّه كاميرا الهاتف نحو QR الخاص بالطالب لتسجيل حضوره تلقائيًا.</div>
                 <div id="qrScannerReader"></div>
                 <div class="scan-result-box" id="scanResultBox">
-                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                    <i class="fas fa-check-circle scan-result-icon" id="scanResultIcon" style="color: var(--success);"></i>
                     <span id="scanResultText"></span>
                 </div>
             </div>
@@ -2185,6 +2387,45 @@
     </div>
 
     <script>
+        // -------------------------
+        // 📌 0.0-أ) لوحة الألوان (الوضع العادي / وضع الكنيسة)
+        // -------------------------
+        function updateThemeToggleLabel() {
+            const labelEl = document.getElementById('themeToggleLabel');
+            if (!labelEl) return;
+            const isChurch = document.documentElement.getAttribute('data-theme') === 'church';
+            labelEl.textContent = isChurch ? 'الوضع العادي' : 'وضع الكنيسة';
+        }
+
+        // تطبيق آخر لوحة ألوان اختارها المستخدم (لو موجودة) من أول لحظة تحميل
+        (function applyStoredTheme() {
+            try {
+                if (localStorage.getItem('appTheme') === 'church') {
+                    document.documentElement.setAttribute('data-theme', 'church');
+                }
+            } catch (error) {
+                console.warn('تعذر قراءة لوحة الألوان المحفوظة:', error);
+            }
+        })();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateThemeToggleLabel();
+            const themeBtn = document.getElementById('themeToggleBtn');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function() {
+                    const isChurch = document.documentElement.getAttribute('data-theme') === 'church';
+                    if (isChurch) {
+                        document.documentElement.removeAttribute('data-theme');
+                        try { localStorage.setItem('appTheme', 'default'); } catch (error) {}
+                    } else {
+                        document.documentElement.setAttribute('data-theme', 'church');
+                        try { localStorage.setItem('appTheme', 'church'); } catch (error) {}
+                    }
+                    updateThemeToggleLabel();
+                });
+            }
+        });
+
         // -------------------------
         // 📌 0.0) صفحة "بطاقة الطالب" (اللي بتفتح من رابط واتساب)
         // -------------------------
@@ -2649,7 +2890,7 @@ let currentSelectedReportWeek = '';
 
             // اسم المدرسة
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 19px Tajawal, Arial, sans-serif';
+            ctx.font = 'bold 19px Cairo, Tajawal, Arial, sans-serif';
             ctx.fillText('خدمة ابولوجيا للدفاعيات', width / 2, 46);
             ctx.restore();
 
@@ -2688,7 +2929,7 @@ let currentSelectedReportWeek = '';
 
             // اسم الطالب
             ctx.fillStyle = '#1a202c';
-            ctx.font = 'bold 21px Tajawal, Arial, sans-serif';
+            ctx.font = 'bold 21px Cairo, Tajawal, Arial, sans-serif';
             ctx.fillText(student.name || '', width / 2, qrY + qrSize + 46);
 
             // كود الطالب
@@ -2701,7 +2942,7 @@ let currentSelectedReportWeek = '';
             // المرحلة (إن وُجدت)
             if (student.stage) {
                 ctx.fillStyle = '#7f8c8d';
-                ctx.font = '15px Tajawal, Arial, sans-serif';
+                ctx.font = '15px Cairo, Tajawal, Arial, sans-serif';
                 ctx.fillText('المرحلة: ' + student.stage, width / 2, qrY + qrSize + 103);
             }
 
@@ -3904,6 +4145,18 @@ document.getElementById('openScannerBtn').addEventListener('click', function() {
             }
         }
 
+        // إعادة تشغيل تأثير التكبير/التصغير (pop) لأيقونة نتيجة المسح
+        function popScanResultIcon(iconClass, colorVar) {
+            const icon = document.getElementById('scanResultIcon');
+            if (!icon) return;
+            icon.className = `fas ${iconClass} scan-result-icon`;
+            icon.style.color = `var(${colorVar})`;
+            // شيل الكلاس وضيفه تاني عشان الأنيميشن يشتغل حتى لو نفس النوع اتكرر
+            icon.classList.remove('pop-animate');
+            void icon.offsetWidth; // إعادة تشغيل الـ reflow لإجبار المتصفح يعيد الأنيميشن
+            icon.classList.add('pop-animate');
+        }
+
         // عند نجاح مسح كود QR
         function onQrScanSuccess(decodedText) {
             const now = Date.now();
@@ -3923,6 +4176,7 @@ document.getElementById('openScannerBtn').addEventListener('click', function() {
                 resultBox.style.background = 'rgba(231, 76, 60, 0.15)';
                 resultText.textContent = 'كود QR غير معروف، لا يوجد طالب مطابق لهذا المعرف.';
                 resultBox.classList.add('active');
+                popScanResultIcon('fa-circle-xmark', '--accent');
                 return;
             }
 
@@ -3936,6 +4190,7 @@ document.getElementById('openScannerBtn').addEventListener('click', function() {
             resultBox.style.background = 'rgba(46, 204, 113, 0.15)';
             resultText.textContent = `تم تسجيل حضور الطالب: ${student.name} ✅`;
             resultBox.classList.add('active');
+            popScanResultIcon('fa-check-circle', '--success');
         }
     
         // -------------------------
